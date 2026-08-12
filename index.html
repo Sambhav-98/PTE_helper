@@ -404,6 +404,30 @@
   .note-delete svg{width:13px;height:13px;}
   .note-empty{font-size:12px;color:var(--muted);text-align:center;padding:24px 10px;}
 
+  /* UPLOADED SOURCES */
+  .upload-dropzone{
+    border:1.5px dashed var(--line);border-radius:10px;padding:14px 10px;
+    text-align:center;cursor:pointer;font-size:11.5px;color:var(--muted);
+    transition:border-color .15s ease, background .15s ease, color .15s ease;
+    margin-bottom:8px;line-height:1.5;
+  }
+  .upload-dropzone:hover, .upload-dropzone.dragover{
+    border-color:var(--accent-gold);background:rgba(201,142,30,0.07);color:var(--ink);
+  }
+  .upload-dropzone-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+  .upload-status-msg{font-size:11px;padding:4px 2px 10px;line-height:1.4;}
+  .upload-status-msg.error{color:var(--accent-red);}
+  .upload-status-msg.success{color:var(--accent-teal);}
+  .uploaded-source-item{
+    display:flex;align-items:center;gap:7px;font-size:12.5px;padding:8px 9px;
+    border-radius:8px;border:1px solid var(--line);margin-bottom:6px;background:var(--paper);
+  }
+  .uploaded-source-item .usi-info{flex:1;min-width:0;}
+  .uploaded-source-item .usi-name{
+    font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .uploaded-source-item .usi-meta{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+
   /* DASHBOARD RINGS */
   .rings-row{display:flex;gap:10px;margin-bottom:12px;}
   .ring-card{
@@ -748,6 +772,16 @@
       <div class="doc-name">📗 Personal Reference</div>
       <div class="doc-meta" id="referenceDocMeta">Checking…</div>
     </div>
+
+    <div class="panel-title" style="margin-top:18px;">My uploads</div>
+    <div class="upload-dropzone" id="uploadDropzone">
+      <input type="file" id="uploadFileInput" accept=".pdf,.txt,.md" style="display:none;">
+      <div>📎 Click or drop a file to add it as a source</div>
+      <div class="upload-dropzone-sub">PDF, .txt, or .md · up to 15MB</div>
+    </div>
+    <div id="uploadStatus"></div>
+    <div id="uploadedSourcesList"></div>
+
     <div class="panel-title" style="margin-top:18px;">Sections</div>
     <ul class="source-list" id="sourceList"></ul>
   </div>
@@ -1048,7 +1082,7 @@ async function loadSources(){
       };
       sourceList.appendChild(li);
     });
-    populateSectionSelects();
+    populatePracticeSourceOptions();
   }catch(err){
     // Sources panel is non-critical; fail silently if the server isn't reachable yet.
   }
@@ -1096,11 +1130,97 @@ async function checkReferenceStatus(){
   }
 }
 
+/* ---------------------------------------------------------
+   UPLOADED SOURCES
+--------------------------------------------------------- */
+const uploadDropzone = document.getElementById('uploadDropzone');
+const uploadFileInput = document.getElementById('uploadFileInput');
+const uploadStatus = document.getElementById('uploadStatus');
+const uploadedSourcesList = document.getElementById('uploadedSourcesList');
+
+uploadDropzone.addEventListener('click', () => uploadFileInput.click());
+uploadFileInput.addEventListener('change', () => {
+  if(uploadFileInput.files[0]) uploadFile(uploadFileInput.files[0]);
+  uploadFileInput.value = '';
+});
+['dragover','dragenter'].forEach(evt => uploadDropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  uploadDropzone.classList.add('dragover');
+}));
+['dragleave','drop'].forEach(evt => uploadDropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  uploadDropzone.classList.remove('dragover');
+}));
+uploadDropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if(file) uploadFile(file);
+});
+
+async function uploadFile(file){
+  uploadStatus.innerHTML = `<div class="upload-status-msg">Uploading ${escapeHtml(file.name)}…</div>`;
+  const formData = new FormData();
+  formData.append('file', file);
+  try{
+    const res = await fetch('/api/uploads', { method: 'POST', body: formData });
+    const data = await res.json();
+    if(!res.ok){
+      uploadStatus.innerHTML = `<div class="upload-status-msg error">${escapeHtml(data.error || 'Upload failed.')}</div>`;
+      return;
+    }
+    uploadStatus.innerHTML = `<div class="upload-status-msg success">Added "${escapeHtml(data.source.name)}" as a source.</div>`;
+    loadUploadedSources();
+  }catch(err){
+    uploadStatus.innerHTML = `<div class="upload-status-msg error">Connection error: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadUploadedSources(){
+  try{
+    const res = await fetch('/api/uploads');
+    const data = await res.json();
+    renderUploadedSources(data.sources || []);
+    populatePracticeSourceOptions();
+  }catch(err){
+    uploadedSourcesList.innerHTML = '';
+  }
+}
+
+function renderUploadedSources(sources){
+  if(!sources.length){
+    uploadedSourcesList.innerHTML = '';
+    return;
+  }
+  uploadedSourcesList.innerHTML = '';
+  sources.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'uploaded-source-item';
+    item.innerHTML = `
+      <div class="usi-info">
+        <div class="usi-name">📄 ${escapeHtml(s.name)}</div>
+        <div class="usi-meta">${s.type.toUpperCase()} · ${s.chunkCount} chunk${s.chunkCount === 1 ? '' : 's'}${s.truncated ? ' · truncated' : ''}</div>
+      </div>
+      <button class="item-delete" aria-label="Remove source">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+    `;
+    item.querySelector('.item-delete').addEventListener('click', async () => {
+      try{
+        await fetch(`/api/uploads/${s.id}`, { method: 'DELETE' });
+        loadUploadedSources();
+      }catch(err){
+        alert('Could not remove source.');
+      }
+    });
+    uploadedSourcesList.appendChild(item);
+  });
+}
+
 initChips();
 initQuickQuestions();
 loadSources();
 checkHealth();
 checkReferenceStatus();
+loadUploadedSources();
 
 /* ---------------------------------------------------------
    ROADMAP
@@ -1532,21 +1652,53 @@ loadTasks();
 --------------------------------------------------------- */
 const practiceBackdrop = document.getElementById('practiceBackdrop');
 
-function populateSectionSelects(){
+async function populatePracticeSourceOptions(){
+  let uploadedList = [];
+  try{
+    const res = await fetch('/api/uploads');
+    const data = await res.json();
+    uploadedList = data.sources || [];
+  }catch(err){
+    // Non-fatal — the dropdowns just won't include uploads this time.
+  }
+
   [document.getElementById('fcSectionSelect'), document.getElementById('qzSectionSelect')].forEach(sel => {
-    if(!sel || sel.dataset.populated) return;
-    sel.innerHTML = '<option value="">Choose a section…</option>';
-    sourceTitles.forEach(title => {
-      const opt = document.createElement('option');
-      opt.value = title;
-      opt.textContent = title;
-      sel.appendChild(opt);
-    });
+    if(!sel) return;
+    const previousValue = sel.value;
+    sel.innerHTML = '<option value="">Choose a source…</option>';
+
+    if(sourceTitles.length){
+      const handbookGroup = document.createElement('optgroup');
+      handbookGroup.label = 'Handbook sections';
+      sourceTitles.forEach(title => {
+        const opt = document.createElement('option');
+        opt.value = title;
+        opt.textContent = title;
+        handbookGroup.appendChild(opt);
+      });
+      sel.appendChild(handbookGroup);
+    }
+
+    if(uploadedList.length){
+      const uploadGroup = document.createElement('optgroup');
+      uploadGroup.label = 'My uploads';
+      uploadedList.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = `upload:${s.id}`;
+        opt.textContent = s.name;
+        uploadGroup.appendChild(opt);
+      });
+      sel.appendChild(uploadGroup);
+    }
+
     const customOpt = document.createElement('option');
     customOpt.value = '__custom__';
     customOpt.textContent = 'Custom topic…';
     sel.appendChild(customOpt);
-    sel.dataset.populated = '1';
+
+    if([...sel.options].some(o => o.value === previousValue)){
+      sel.value = previousValue;
+    }
   });
 }
 
@@ -1554,8 +1706,16 @@ function wireCustomTopicToggle(selectId, inputId){
   const sel = document.getElementById(selectId);
   const input = document.getElementById(inputId);
   sel.addEventListener('change', () => {
-    input.style.display = sel.value === '__custom__' ? 'block' : 'none';
-    if(sel.value !== '__custom__') input.value = '';
+    if(sel.value === '__custom__'){
+      input.style.display = 'block';
+      input.placeholder = 'or type your own topic…';
+    } else if(sel.value.startsWith('upload:')){
+      input.style.display = 'block';
+      input.placeholder = 'Optional: narrow to a specific part…';
+    } else {
+      input.style.display = 'none';
+      input.value = '';
+    }
   });
 }
 wireCustomTopicToggle('fcSectionSelect', 'fcCustomTopic');
@@ -1565,9 +1725,12 @@ function readTopicSelection(selectId, inputId){
   const sel = document.getElementById(selectId);
   const input = document.getElementById(inputId);
   if(sel.value === '__custom__'){
-    return { sectionTitle: null, topic: input.value.trim() };
+    return { sectionTitle: null, uploadId: null, topic: input.value.trim() };
   }
-  return { sectionTitle: sel.value || null, topic: null };
+  if(sel.value.startsWith('upload:')){
+    return { sectionTitle: null, uploadId: sel.value.slice(7), topic: input.value.trim() || null };
+  }
+  return { sectionTitle: sel.value || null, uploadId: null, topic: null };
 }
 
 function openPractice(){
@@ -1601,9 +1764,9 @@ const deckList = document.getElementById('deckList');
 let fcState = { cards: [], topic: '', index: 0, deckId: null };
 
 document.getElementById('fcGenerateBtn').addEventListener('click', async () => {
-  const { sectionTitle, topic } = readTopicSelection('fcSectionSelect', 'fcCustomTopic');
-  if(!sectionTitle && !topic){
-    flashcardArea.innerHTML = '<div class="practice-error">Choose a section or type a topic first.</div>';
+  const { sectionTitle, uploadId, topic } = readTopicSelection('fcSectionSelect', 'fcCustomTopic');
+  if(!sectionTitle && !uploadId && !topic){
+    flashcardArea.innerHTML = '<div class="practice-error">Choose a section, an uploaded source, or type a topic first.</div>';
     return;
   }
   const useReference = document.getElementById('fcUseReference').checked;
@@ -1615,7 +1778,7 @@ document.getElementById('fcGenerateBtn').addEventListener('click', async () => {
     const res = await fetch('/api/flashcards/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sectionTitle, topic, useReference })
+      body: JSON.stringify({ sectionTitle, uploadId, topic, useReference })
     });
     const data = await res.json();
     if(!res.ok){
@@ -1750,9 +1913,9 @@ const quizHistoryList = document.getElementById('quizHistoryList');
 let qzState = { questions: [], topic: '', index: 0, correctCount: 0, answered: false, selected: null, saved: false };
 
 document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
-  const { sectionTitle, topic } = readTopicSelection('qzSectionSelect', 'qzCustomTopic');
-  if(!sectionTitle && !topic){
-    quizArea.innerHTML = '<div class="practice-error">Choose a section or type a topic first.</div>';
+  const { sectionTitle, uploadId, topic } = readTopicSelection('qzSectionSelect', 'qzCustomTopic');
+  if(!sectionTitle && !uploadId && !topic){
+    quizArea.innerHTML = '<div class="practice-error">Choose a section, an uploaded source, or type a topic first.</div>';
     return;
   }
   const useReference = document.getElementById('qzUseReference').checked;
@@ -1765,7 +1928,7 @@ document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
     const res = await fetch('/api/quiz/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sectionTitle, topic, useReference, count })
+      body: JSON.stringify({ sectionTitle, uploadId, topic, useReference, count })
     });
     const data = await res.json();
     if(!res.ok){
@@ -1948,7 +2111,7 @@ function renderMarkdown(text){
   return out || `<p>${html}</p>`;
 }
 
-function addMessage(role, content, referenceInfo){
+function addMessage(role, content, referenceInfo, uploadedSourceNames){
   if(heroBlock) heroBlock.style.display = 'none';
   const msg = document.createElement('div');
   msg.className = `msg ${role}`;
@@ -1976,6 +2139,16 @@ function addMessage(role, content, referenceInfo){
       refChip.title = 'Short excerpts from your personal reference material were included as context for this answer';
       refChip.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Personal reference · p. ${pageList}`;
       actions.appendChild(refChip);
+    }
+
+    if(uploadedSourceNames && uploadedSourceNames.length){
+      uploadedSourceNames.forEach(name => {
+        const chip = document.createElement('span');
+        chip.className = 'ref-chip';
+        chip.title = 'A short excerpt from this uploaded source was included as context for this answer';
+        chip.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg> ${escapeHtml(name)}`;
+        actions.appendChild(chip);
+      });
     }
 
     const saveBtn = document.createElement('button');
@@ -2033,7 +2206,7 @@ async function sendMessage(){
     }
 
     messages.push({role:'assistant', content: data.reply});
-    addMessage('assistant', data.reply, data.reference);
+    addMessage('assistant', data.reply, data.reference, data.uploadedSources);
   }catch(err){
     removeThinking();
     addMessage('assistant', `**Connection error:** ${err.message}. Is the server running?`);

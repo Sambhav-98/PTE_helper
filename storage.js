@@ -7,6 +7,7 @@ const PROGRESS_FILE = path.join(DATA_DIR, 'progress.json');
 const TASKS_FILE = path.join(DATA_DIR, 'tasks.json');
 const FLASHCARDS_FILE = path.join(DATA_DIR, 'flashcards.json');
 const QUIZ_HISTORY_FILE = path.join(DATA_DIR, 'quiz-history.json');
+const UPLOADS_FILE = path.join(DATA_DIR, 'uploads.json');
 
 async function ensureFile(filePath, defaultValue) {
   await fs.mkdir(DATA_DIR, { recursive: true });
@@ -62,5 +63,11 @@ module.exports = {
   },
   async saveQuizHistory(history) {
     return writeJSON(QUIZ_HISTORY_FILE, history);
+  },
+  async getUploads() {
+    return readJSON(UPLOADS_FILE, []);
+  },
+  async saveUploads(uploads) {
+    return writeJSON(UPLOADS_FILE, uploads);
   }
 };
