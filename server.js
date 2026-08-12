@@ -148,7 +148,7 @@ async function generateStructuredContent(systemPrompt, userPrompt) {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 1.5
+      temperature: 1
     })
   });
 
