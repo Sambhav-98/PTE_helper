@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>PTE Prep Hub — Ask the Handbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17203A;
+    --paper:#F5F6F3;
+    --paper-raised:#FFFFFF;
+    --line:#DEDBD3;
+    --accent-gold:#C98E1E;
+    --accent-teal:#2F7B6D;
+    --accent-red:#B0432A;
+    --muted:#726C5E;
+    --shadow: 0 1px 2px rgba(23,32,58,0.06), 0 8px 24px rgba(23,32,58,0.05);
+    --topbar-h: 56px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-t: env(safe-area-inset-top, 0px);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior:none;
+  }
+  body.drawer-open{overflow:hidden;}
+  button{font-family:inherit;}
+
+  .app{
+    display:grid;
+    grid-template-columns: 260px 1fr 320px;
+    grid-template-rows: var(--topbar-h) 1fr;
+    height:100vh;
+    height:100dvh;
+    min-height:560px;
+  }
+
+  /* TOP BAR */
+  .topbar{
+    grid-column:1/4;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:0 20px;
+    padding-top:var(--safe-t);
+    border-bottom:1px solid var(--line);
+    background:var(--paper-raised);
+    height:calc(var(--topbar-h) + var(--safe-t));
+    position:relative;
+    z-index:20;
+  }
+  .topbar-left, .topbar-right{
+    display:flex;align-items:center;gap:8px;
+  }
+  .icon-btn{
+    display:none;
+    align-items:center;justify-content:center;
+    width:38px;height:38px;
+    border-radius:9px;border:1px solid var(--line);
+    background:var(--paper);cursor:pointer;color:var(--ink);
+    flex-shrink:0;
+  }
+  .icon-btn svg{width:17px;height:17px;}
+  .icon-btn.always-visible{display:flex;}
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-family:'Source Serif 4', serif;
+    font-weight:700;
+    font-size:17px;
+    letter-spacing:-0.01em;
+    white-space:nowrap;
+  }
+  .brand .mark{
+    width:26px;height:26px;border-radius:6px;
+    background:linear-gradient(155deg, var(--ink), #2c3a63);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;
+    flex-shrink:0;
+  }
+  .status-pill{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    color:var(--muted);
+    display:flex;align-items:center;gap:6px;
+    padding:5px 10px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    background:var(--paper);
+    white-space:nowrap;
+  }
+  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-red);flex-shrink:0;}
+  .status-pill.ready .status-dot{background:var(--accent-teal);}
+  .status-label-full{display:inline;}
+  .status-label-short{display:none;}
+
+  /* DRAWER BACKDROP (mobile only) */
+  .drawer-backdrop{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(23,32,58,0.42);
+    z-index:30;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  .drawer-backdrop.open{opacity:1;pointer-events:auto;}
+
+  /* PANELS */
+  .panel{
+    overflow-y:auto;
+    padding:18px 16px;
+    padding-bottom:calc(18px + var(--safe-b));
+  }
+  .panel-left{
+    border-right:1px solid var(--line);
+    background:var(--paper-raised);
+  }
+  .panel-right{
+    border-left:1px solid var(--line);
+    background:var(--paper-raised);
+    display:flex;
+    flex-direction:column;
+  }
+  .panel-mobile-header{
+    display:none;
+    align-items:center;justify-content:space-between;
+    margin:-4px -4px 14px;
+    padding-bottom:12px;
+    border-bottom:1px solid var(--line);
+  }
+  .panel-mobile-header .title{
+    font-family:'Source Serif 4', serif;
+    font-weight:700;font-size:17px;
+  }
+  .panel-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--muted);
+    margin:4px 0 12px 2px;
+  }
+  .source-doc{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 12px 10px;
+    margin-bottom:10px;
+    background:var(--paper);
+  }
+  .source-doc .doc-name{
+    font-weight:600;font-size:13.5px;
+    display:flex;align-items:center;gap:8px;
+    margin-bottom:2px;
+  }
+  .source-doc .doc-meta{
+    font-size:11.5px;color:var(--muted);
+  }
+  .source-list{list-style:none;margin:10px 0 0;padding:0;}
+  .source-list li{
+    font-size:13px;
+    padding:10px 8px;
+    border-radius:6px;
+    cursor:pointer;
+    color:var(--ink);
+    display:flex;align-items:center;gap:7px;
+    transition:background .12s ease;
+  }
+  .source-list li:hover{background:rgba(201,142,30,0.12);}
+  .source-list li .dot{width:5px;height:5px;border-radius:50%;background:var(--accent-gold);flex-shrink:0;}
+  .source-list li.active{background:rgba(47,123,109,0.13);color:var(--accent-teal);font-weight:500;}
+
+  /* CENTER CHAT */
+  .panel-center{
+    display:flex;flex-direction:column;
+    padding:0;
+    background:var(--paper);
+    min-width:0;
+  }
+  .chat-scroll{
+    flex:1;overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:26px 8% 10px;
+  }
+  .hero{
+    max-width:640px;margin:6vh auto 0;
+    text-align:center;
+  }
+  .hero h1{
+    font-family:'Source Serif 4', serif;
+    font-weight:700;
+    font-size:30px;
+    line-height:1.15;
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .hero p{
+    color:var(--muted);
+    font-size:14.5px;
+    line-height:1.55;
+    margin:0 0 26px;
+  }
+  .chip-row{
+    display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
+  }
+  .chip{
+    font-size:12.5px;
+    padding:9px 14px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    background:var(--paper-raised);
+    cursor:pointer;
+    color:var(--ink);
+    transition:border-color .12s ease, transform .12s ease;
+  }
+  .chip:hover{border-color:var(--accent-gold); transform:translateY(-1px);}
+
+  .msg{
+    max-width:720px;margin:0 auto 18px;
+    display:flex;gap:12px;
+    animation:rise .25s ease;
+  }
+  @keyframes rise{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  .msg .avatar{
+    width:26px;height:26px;border-radius:7px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;
+    margin-top:2px;
+  }
+  .msg.user .avatar{background:#fff;border:1px solid var(--line);color:var(--muted);}
+  .msg.assistant .avatar{background:var(--ink);color:#fff;}
+  .msg .bubble{
+    font-size:14.5px;line-height:1.65;
+    padding-top:2px;
+    min-width:0;
+    overflow-wrap:break-word;
+    flex:1;
+  }
+  .msg.user .bubble{font-weight:500;}
+  .msg .bubble p{margin:0 0 10px;}
+  .msg .bubble p:last-child{margin-bottom:0;}
+  .msg .bubble ul,.msg .bubble ol{margin:6px 0 10px;padding-left:20px;}
+  .msg .bubble strong{color:var(--ink);}
+  .msg .bubble code{
+    background:rgba(23,32,58,0.06);
+    padding:1px 5px;border-radius:4px;
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+  }
+  .thinking{
+    display:flex;gap:4px;align-items:center;padding:4px 0;
+  }
+  .thinking span{
+    width:5px;height:5px;border-radius:50%;background:var(--muted);
+    animation:blink 1.1s infinite ease-in-out;
+  }
+  .thinking span:nth-child(2){animation-delay:.15s;}
+  .thinking span:nth-child(3){animation-delay:.3s;}
+  @keyframes blink{0%,80%,100%{opacity:.25;}40%{opacity:1;}}
+
+  .msg-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
+  .save-btn{
+    font-size:11px;border:1px solid var(--line);background:var(--paper-raised);
+    border-radius:6px;padding:5px 10px;cursor:pointer;color:var(--muted);
+    display:inline-flex;align-items:center;gap:5px;transition:border-color .12s ease, color .12s ease;
+  }
+  .save-btn:hover{border-color:var(--accent-gold);color:var(--ink);}
+  .save-btn.saved{color:var(--accent-teal);border-color:var(--accent-teal);cursor:default;}
+  .save-btn svg{width:12px;height:12px;}
+
+  .ref-chip{
+    font-size:11px;border:1px solid rgba(47,123,109,0.3);background:rgba(47,123,109,0.08);
+    border-radius:6px;padding:5px 10px;color:var(--accent-teal);
+    display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  }
+  .ref-chip svg{width:12px;height:12px;flex-shrink:0;}
+
+  .composer{
+    padding:12px 8%;
+    padding-bottom:calc(16px + var(--safe-b));
+    border-top:1px solid var(--line);
+    background:var(--paper-raised);
+  }
+  .composer-inner{
+    max-width:720px;margin:0 auto;
+    display:flex;align-items:flex-end;gap:10px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--paper);
+    padding:8px 8px 8px 16px;
+  }
+  .composer-inner:focus-within{border-color:var(--accent-gold);}
+  textarea#composerInput{
+    flex:1;border:none;background:transparent;resize:none;
+    font-family:'IBM Plex Sans',sans-serif;font-size:14px;
+    line-height:1.5;padding:8px 0;max-height:140px;outline:none;color:var(--ink);
+  }
+  .send-btn{
+    width:38px;height:38px;border-radius:10px;border:none;
+    background:var(--ink);color:#fff;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;transition:background .12s ease;
+  }
+  .send-btn:hover{background:#2c3a63;}
+  .send-btn:disabled{background:#B7B2A4;cursor:not-allowed;}
+  .composer-note{
+    max-width:720px;margin:8px auto 0;font-size:11px;color:var(--muted);text-align:center;
+  }
+
+  /* RIGHT PANEL - STUDIO */
+  .studio-tabs{
+    display:flex;gap:4px;margin-bottom:14px;flex-shrink:0;
+    background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:3px;
+  }
+  .studio-tab{
+    flex:1;border:none;background:transparent;padding:7px 4px;border-radius:7px;
+    font-size:11px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;
+    letter-spacing:.02em;color:var(--muted);cursor:pointer;
+  }
+  .studio-tab.active{background:var(--paper-raised);color:var(--ink);box-shadow:var(--shadow);font-weight:600;}
+  .studio-tab-content{display:none;}
+  .studio-tab-content.active{display:block;}
+
+  .studio-card{
+    border:1px solid var(--line);border-radius:10px;
+    padding:13px 13px 12px;margin-bottom:12px;background:var(--paper);
+  }
+  .studio-card h3{
+    font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;
+    margin:0 0 9px;color:var(--muted);font-weight:600;font-family:'IBM Plex Mono',monospace;
+  }
+  .fact-row{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-bottom:1px dashed var(--line);}
+  .fact-row:last-child{border-bottom:none;}
+  .fact-row .k{color:var(--muted);}
+  .fact-row .v{font-weight:600;text-align:right;}
+  .stars{color:var(--accent-gold);font-size:11px;letter-spacing:1px;}
+  .quick-q{
+    font-size:13px;padding:10px 9px;border-radius:7px;margin-bottom:6px;
+    background:var(--paper-raised);border:1px solid var(--line);cursor:pointer;
+    transition:border-color .12s ease;
+  }
+  .quick-q:hover{border-color:var(--accent-teal);}
+
+  /* ROADMAP */
+  .roadmap-progress{margin-bottom:14px;}
+  .roadmap-progress-track{height:6px;border-radius:4px;background:var(--line);overflow:hidden;}
+  .roadmap-progress-fill{height:100%;width:0%;background:var(--accent-teal);transition:width .25s ease;}
+  .roadmap-progress-label{font-size:11px;color:var(--muted);margin-top:6px;font-family:'IBM Plex Mono',monospace;}
+  .phase{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;background:var(--paper);overflow:hidden;}
+  .phase-header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 12px;cursor:pointer;gap:8px;
+  }
+  .phase-header .phase-title{font-weight:600;font-size:12.5px;}
+  .phase-header .phase-time{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;white-space:nowrap;}
+  .phase-chevron{transition:transform .18s ease;flex-shrink:0;color:var(--muted);}
+  .phase.open .phase-chevron{transform:rotate(90deg);}
+  .phase-steps{padding:0 12px 10px;display:none;}
+  .phase.open .phase-steps{display:block;}
+  .step-item{display:flex;gap:9px;padding:9px 0;border-top:1px dashed var(--line);}
+  .step-item:first-child{border-top:none;}
+  .step-check{
+    width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line);flex-shrink:0;margin-top:2px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--paper-raised);
+    color:transparent;font-size:11px;
+  }
+  .step-check.done{background:var(--accent-teal);border-color:var(--accent-teal);color:#fff;}
+  .step-body{flex:1;min-width:0;}
+  .step-title{font-size:12.5px;font-weight:500;}
+  .step-body.done .step-title{text-decoration:line-through;color:var(--muted);}
+  .step-detail{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.5;}
+  .step-why{font-size:10.5px;color:var(--accent-teal);margin-top:4px;line-height:1.4;}
+
+  /* NOTEBOOK */
+  .notebook-add{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--paper);margin-bottom:14px;}
+  .notebook-add input, .notebook-add textarea{
+    width:100%;border:1px solid var(--line);border-radius:7px;padding:8px 9px;
+    font-family:inherit;font-size:12.5px;margin-bottom:7px;outline:none;background:var(--paper-raised);color:var(--ink);
+  }
+  .notebook-add input:focus, .notebook-add textarea:focus{border-color:var(--accent-gold);}
+  .notebook-add textarea{resize:vertical;min-height:64px;}
+  .notebook-add button{
+    width:100%;padding:9px;border-radius:7px;border:none;background:var(--ink);color:#fff;
+    font-size:12.5px;font-weight:500;cursor:pointer;
+  }
+  .notebook-add button:hover{background:#2c3a63;}
+  .note-card{border:1px solid var(--line);border-radius:10px;padding:10px 30px 10px 11px;margin-bottom:9px;background:var(--paper);position:relative;}
+  .note-card .note-title{font-weight:600;font-size:12.5px;margin-bottom:3px;}
+  .note-card .note-meta{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em;}
+  .note-card .note-content{font-size:12px;line-height:1.55;color:var(--ink);white-space:pre-wrap;overflow-wrap:break-word;}
+  .note-delete{
+    position:absolute;top:8px;right:8px;background:none;border:none;color:var(--muted);
+    cursor:pointer;padding:4px;line-height:0;
+  }
+  .note-delete:hover{color:var(--accent-red);}
+  .note-delete svg{width:13px;height:13px;}
+  .note-empty{font-size:12px;color:var(--muted);text-align:center;padding:24px 10px;}
+
+  /* DASHBOARD RINGS */
+  .rings-row{display:flex;gap:10px;margin-bottom:12px;}
+  .ring-card{
+    flex:1;border:1px solid var(--line);border-radius:10px;background:var(--paper);
+    padding:12px 8px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;
+  }
+  .ring-card svg{width:76px;height:76px;}
+  .ring-track{fill:none;stroke:var(--line);stroke-width:8;}
+  .ring-fill{fill:none;stroke:var(--accent-teal);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .5s ease;}
+  .ring-label{font-size:10.5px;color:var(--muted);text-align:center;line-height:1.35;}
+  .ring-label strong{color:var(--ink);font-weight:600;display:block;font-size:11px;}
+
+  /* CALENDAR MODAL */
+  .cal-backdrop{
+    display:none;position:fixed;inset:0;background:rgba(23,32,58,0.5);
+    z-index:60;align-items:center;justify-content:center;padding:20px;
+    opacity:0;pointer-events:none;transition:opacity .2s ease;
+  }
+  .cal-backdrop.open{display:flex;opacity:1;pointer-events:auto;}
+  .cal-modal{
+    background:var(--paper-raised);border-radius:16px;
+    width:min(720px, 100%);max-height:88vh;overflow:hidden;
+    display:flex;flex-direction:column;
+    box-shadow:0 20px 60px rgba(23,32,58,0.3);
+  }
+  .cal-modal-header{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:14px 18px;border-bottom:1px solid var(--line);flex-shrink:0;
+  }
+  .cal-modal-header h2{font-family:'Source Serif 4',serif;font-size:18px;margin:0;font-weight:700;white-space:nowrap;}
+  .cal-nav{display:flex;align-items:center;gap:6px;}
+  .cal-nav-btn{
+    width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--paper);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);font-size:15px;
+  }
+  .cal-nav-btn:hover{border-color:var(--accent-gold);}
+  .cal-today-btn{
+    font-size:10.5px;font-family:'IBM Plex Mono',monospace;padding:6px 10px;border-radius:8px;
+    border:1px solid var(--line);background:var(--paper);cursor:pointer;color:var(--muted);
+  }
+  .cal-today-btn:hover{color:var(--ink);border-color:var(--accent-gold);}
+  .cal-body{display:flex;flex:1;min-height:0;overflow:hidden;}
+  .cal-grid-wrap{flex:1.3;padding:16px 18px;overflow-y:auto;min-width:0;}
+  .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;}
+  .cal-weekdays span{font-size:10px;text-align:center;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-day{
+    aspect-ratio:1;border-radius:9px;border:1px solid transparent;background:var(--paper);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:pointer;position:relative;gap:3px;transition:border-color .12s ease, background .12s ease;
+  }
+  .cal-day:hover{border-color:var(--line);}
+  .cal-day.other-month{opacity:0.3;}
+  .cal-day.today{border-color:var(--accent-teal);}
+  .cal-day.selected{background:var(--ink);}
+  .cal-day.selected .cal-day-num{color:#fff;}
+  .cal-day-num{font-size:12.5px;font-weight:500;}
+  .cal-day-dots{display:flex;gap:2px;height:4px;}
+  .cal-day-dot{width:4px;height:4px;border-radius:50%;background:var(--accent-gold);}
+  .cal-day.selected .cal-day-dot{background:#fff;}
+  .cal-day-panel{
+    flex:1;min-width:210px;border-left:1px solid var(--line);
+    padding:16px 18px;overflow-y:auto;background:var(--paper);
+  }
+  .cal-day-panel h3{font-family:'Source Serif 4',serif;font-size:15px;margin:0 0 12px;font-weight:700;}
+  .cal-task-add{margin-bottom:14px;display:flex;gap:6px;}
+  .cal-task-add input{
+    flex:1;min-width:0;border:1px solid var(--line);border-radius:7px;padding:8px 9px;
+    font-family:inherit;font-size:12.5px;outline:none;background:var(--paper-raised);color:var(--ink);
+  }
+  .cal-task-add input:focus{border-color:var(--accent-gold);}
+  .cal-task-add button{
+    padding:8px 12px;border-radius:7px;border:none;background:var(--ink);color:#fff;
+    font-size:12.5px;font-weight:500;cursor:pointer;flex-shrink:0;
+  }
+  .cal-task-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-top:1px dashed var(--line);}
+  .cal-task-item:first-child{border-top:none;}
+  .cal-task-check{
+    width:16px;height:16px;border-radius:5px;border:1.5px solid var(--line);flex-shrink:0;margin-top:2px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--paper-raised);
+    color:transparent;font-size:10px;
+  }
+  .cal-task-check.done{background:var(--accent-teal);border-color:var(--accent-teal);color:#fff;}
+  .cal-task-title{font-size:12.5px;flex:1;min-width:0;overflow-wrap:break-word;padding-top:1px;}
+  .cal-task-title.done{text-decoration:line-through;color:var(--muted);}
+  .cal-task-delete{background:none;border:none;color:var(--muted);cursor:pointer;padding:2px;flex-shrink:0;}
+  .cal-task-delete:hover{color:var(--accent-red);}
+  .cal-task-delete svg{width:12px;height:12px;}
+  .cal-day-empty{font-size:12px;color:var(--muted);padding:6px 0;}
+
+  /* PRACTICE MODAL (Flashcards + Quiz) */
+  .pmodal-tabs{
+    display:flex;gap:4px;margin:0 18px;padding:3px;flex-shrink:0;
+    background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  }
+  .pmodal-tab{
+    flex:1;border:none;background:transparent;padding:8px 4px;border-radius:7px;
+    font-size:12px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;
+    letter-spacing:.02em;color:var(--muted);cursor:pointer;
+  }
+  .pmodal-tab.active{background:var(--paper-raised);color:var(--ink);box-shadow:var(--shadow);font-weight:600;}
+  .pmodal-tab-content{display:none;}
+  .pmodal-tab-content.active{display:block;}
+  .practice-body{flex:1;overflow-y:auto;padding:16px 18px 20px;}
+
+  .practice-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .practice-controls select, .practice-controls input[type="text"]{
+    flex:1;min-width:160px;border:1px solid var(--line);border-radius:8px;padding:9px 10px;
+    font-family:inherit;font-size:13px;background:var(--paper-raised);color:var(--ink);outline:none;
+  }
+  .practice-controls select:focus, .practice-controls input:focus{border-color:var(--accent-gold);}
+  #qzCount{flex:0 1 120px;min-width:110px;}
+  .ref-toggle{
+    display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);
+    flex-basis:100%;
+  }
+  .ref-toggle input{width:14px;height:14px;}
+  .practice-generate-btn{
+    flex-basis:100%;padding:10px;border-radius:8px;border:none;background:var(--ink);color:#fff;
+    font-size:13px;font-weight:500;cursor:pointer;
+  }
+  .practice-generate-btn:hover{background:#2c3a63;}
+  .practice-generate-btn:disabled{background:#B7B2A4;cursor:not-allowed;}
+  .practice-empty{
+    font-size:12.5px;color:var(--muted);text-align:center;padding:36px 16px;
+    border:1px dashed var(--line);border-radius:10px;
+  }
+  .practice-error{
+    font-size:12.5px;color:var(--accent-red);text-align:center;padding:16px;
+    border:1px solid rgba(176,67,42,0.3);background:rgba(176,67,42,0.06);border-radius:10px;
+  }
+  .practice-loading{
+    font-size:12.5px;color:var(--muted);text-align:center;padding:36px 16px;
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+  }
+
+  /* Flashcard flip viewer */
+  .flashcard{perspective:1200px;height:170px;margin-bottom:14px;cursor:pointer;}
+  .flashcard-inner{
+    position:relative;width:100%;height:100%;transition:transform .5s;
+    transform-style:preserve-3d;
+  }
+  .flashcard.flipped .flashcard-inner{transform:rotateY(180deg);}
+  .flashcard-face{
+    position:absolute;inset:0;backface-visibility:hidden;
+    border:1px solid var(--line);border-radius:14px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:20px;font-size:14.5px;line-height:1.5;background:var(--paper-raised);
+    box-shadow:var(--shadow);
+  }
+  .flashcard-face .fc-tag{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--muted);margin-bottom:10px;
+  }
+  .flashcard-back{transform:rotateY(180deg);background:var(--ink);color:#fff;}
+  .flashcard-back .fc-tag{color:rgba(255,255,255,0.6);}
+  .flashcard-hint{text-align:center;font-size:10.5px;color:var(--muted);margin:-6px 0 14px;}
+  .flashcard-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+  .flashcard-nav button{
+    padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--paper-raised);
+    font-size:12.5px;cursor:pointer;color:var(--ink);
+  }
+  .flashcard-nav button:hover{border-color:var(--accent-gold);}
+  .flashcard-nav button:disabled{opacity:0.4;cursor:not-allowed;}
+  .flashcard-counter{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);}
+  .deck-save-btn{
+    width:100%;padding:9px;border-radius:8px;border:1px solid var(--accent-teal);
+    background:rgba(47,123,109,0.08);color:var(--accent-teal);font-size:12.5px;font-weight:500;
+    cursor:pointer;margin-bottom:6px;
+  }
+  .deck-save-btn:hover{background:rgba(47,123,109,0.15);}
+  .deck-save-btn.saved{cursor:default;opacity:0.7;}
+
+  .deck-item, .quiz-history-item{
+    display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:9px;
+    padding:9px 10px;margin-bottom:7px;background:var(--paper);cursor:pointer;
+  }
+  .deck-item:hover, .quiz-history-item:hover{border-color:var(--accent-gold);}
+  .deck-item-info, .quiz-history-info{flex:1;min-width:0;}
+  .deck-item-title, .quiz-history-title{font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .deck-item-meta, .quiz-history-meta{font-size:10.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+  .item-delete{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;flex-shrink:0;}
+  .item-delete:hover{color:var(--accent-red);}
+  .item-delete svg{width:13px;height:13px;}
+  .quiz-score-badge{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
+    padding:3px 8px;border-radius:6px;flex-shrink:0;
+  }
+  .quiz-score-badge.good{background:rgba(47,123,109,0.12);color:var(--accent-teal);}
+  .quiz-score-badge.mid{background:rgba(201,142,30,0.15);color:var(--accent-gold);}
+  .quiz-score-badge.low{background:rgba(176,67,42,0.1);color:var(--accent-red);}
+
+  /* Quiz runner */
+  .quiz-progress{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:10px;}
+  .quiz-question{font-size:14.5px;font-weight:500;margin-bottom:14px;line-height:1.5;}
+  .quiz-option{
+    display:block;width:100%;text-align:left;padding:11px 14px;margin-bottom:8px;
+    border:1px solid var(--line);border-radius:9px;background:var(--paper-raised);
+    font-size:13px;cursor:pointer;color:var(--ink);transition:border-color .12s ease;
+  }
+  .quiz-option:hover{border-color:var(--accent-gold);}
+  .quiz-option.correct{border-color:var(--accent-teal);background:rgba(47,123,109,0.1);font-weight:500;}
+  .quiz-option.incorrect{border-color:var(--accent-red);background:rgba(176,67,42,0.08);}
+  .quiz-option:disabled{cursor:default;}
+  .quiz-explanation{
+    font-size:12px;color:var(--muted);background:var(--paper);border:1px solid var(--line);
+    border-radius:9px;padding:10px 12px;margin:10px 0 14px;line-height:1.5;
+  }
+  .quiz-next-btn{
+    width:100%;padding:10px;border-radius:8px;border:none;background:var(--ink);color:#fff;
+    font-size:13px;font-weight:500;cursor:pointer;
+  }
+  .quiz-next-btn:hover{background:#2c3a63;}
+  .quiz-result{text-align:center;padding:20px 10px;}
+  .quiz-result .score-big{
+    font-family:'Source Serif 4',serif;font-weight:700;font-size:34px;margin-bottom:4px;
+  }
+  .quiz-result .score-label{font-size:12.5px;color:var(--muted);margin-bottom:18px;}
+  .quiz-result-actions{display:flex;gap:8px;}
+  .quiz-result-actions button{
+    flex:1;padding:9px;border-radius:8px;font-size:12.5px;cursor:pointer;
+  }
+  .quiz-save-result-btn{border:1px solid var(--accent-teal);background:rgba(47,123,109,0.08);color:var(--accent-teal);}
+  .quiz-retry-btn{border:1px solid var(--line);background:var(--paper-raised);color:var(--ink);}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:#D8D4C8;border-radius:8px;}
+
+  /* ---------------------------------------------------------
+     MOBILE / TABLET LAYOUT
+     Sources + Studio become slide-in drawers over the chat.
+  --------------------------------------------------------- */
+  @media (max-width:880px){
+    .app{grid-template-columns: 1fr; grid-template-rows: var(--topbar-h) 1fr;}
+
+    .icon-btn{display:flex;}
+    .brand{font-size:15.5px;}
+    .brand .mark{width:24px;height:24px;font-size:10px;}
+    .status-label-full{display:none;}
+    .status-label-short{display:inline;}
+    .status-pill{padding:5px 9px;}
+
+    .drawer-backdrop{display:block;}
+
+    .panel-left, .panel-right{
+      position:fixed;
+      top:0; bottom:0;
+      width:min(88vw, 340px);
+      z-index:40;
+      padding-top:calc(18px + var(--safe-t));
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.02), 0 12px 40px rgba(23,32,58,0.25);
+      transition:transform .26s cubic-bezier(.22,.61,.36,1);
+    }
+    .panel-left{
+      left:0;
+      transform:translateX(-100%);
+      border-right:1px solid var(--line);
+    }
+    .panel-right{
+      right:0;
+      transform:translateX(100%);
+      border-left:1px solid var(--line);
+    }
+    .panel-left.open{transform:translateX(0);}
+    .panel-right.open{transform:translateX(0);}
+
+    .panel-mobile-header{display:flex;}
+
+    .chat-scroll{padding:18px 5% 8px;}
+    .hero{margin-top:8vh;}
+    .hero h1{font-size:23px;}
+    .hero p{font-size:13.5px;}
+    .msg{max-width:100%;}
+
+    .composer{padding:10px 4%; padding-bottom:calc(14px + var(--safe-b));}
+    .composer-note{font-size:10.5px;padding:0 4px;}
+
+    /* 16px min font-size on inputs prevents iOS Safari auto-zoom */
+    textarea#composerInput{font-size:16px;}
+    .notebook-add input, .notebook-add textarea{font-size:16px;}
+    .cal-task-add input{font-size:16px;}
+    .practice-controls select, .practice-controls input[type="text"]{font-size:16px;}
+
+    .cal-backdrop{padding:0;}
+    .cal-modal{width:100%;height:100%;max-height:100dvh;border-radius:0;}
+    .cal-body{flex-direction:column;}
+    .cal-day-panel{border-left:none;border-top:1px solid var(--line);min-width:0;}
+    .ring-card svg{width:64px;height:64px;}
+    .flashcard{height:200px;}
+  }
+
+  @media (max-width:420px){
+    .brand span.brand-text{display:none;}
+    .topbar{padding:0 12px; padding-top:var(--safe-t);}
+    .status-pill{padding:5px 7px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="icon-btn" id="openSources" aria-label="Open sources">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/></svg>
+      </button>
+      <div class="brand"><div class="mark">PTE</div><span class="brand-text">PTE Prep Hub</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-pill" id="apiStatus">
+        <span class="status-dot"></span>
+        <span class="status-label-full" id="apiStatusLabel">Checking server…</span>
+        <span class="status-label-short" id="apiStatusLabelShort">···</span>
+      </div>
+      <button class="icon-btn always-visible" id="openCalendar" aria-label="Open calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </button>
+      <button class="icon-btn always-visible" id="openPractice" aria-label="Open practice: flashcards and quiz">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 21h9a2 2 0 0 0 2-2V9"/></svg>
+      </button>
+      <button class="icon-btn" id="openStudio" aria-label="Open studio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="14" y1="4" x2="14" y2="20"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+  <div class="panel panel-left" id="panelLeft">
+    <div class="panel-mobile-header">
+      <span class="title">Sources</span>
+      <button class="icon-btn" id="closeSources" aria-label="Close sources" style="display:flex;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+    </div>
+    <div class="panel-title">Source</div>
+    <div class="source-doc">
+      <div class="doc-name">📘 PTE Academic Handbook</div>
+      <div class="doc-meta">Ultimate Language Academy · 14 sections</div>
+    </div>
+    <div class="source-doc" id="referenceDocCard">
+      <div class="doc-name">📗 Personal Reference</div>
+      <div class="doc-meta" id="referenceDocMeta">Checking…</div>
+    </div>
+    <div class="panel-title" style="margin-top:18px;">Sections</div>
+    <ul class="source-list" id="sourceList"></ul>
+  </div>
+
+  <div class="panel panel-center">
+    <div class="chat-scroll" id="chatScroll">
+      <div class="hero" id="heroBlock">
+        <h1>Ask the PTE handbook anything.</h1>
+        <p>This is grounded entirely in the uploaded PTE Academic handbook — scoring breakdowns, task strategies, and templates. Save any answer to your Notebook, or open the Roadmap for a step-by-step study plan.</p>
+        <div class="chip-row" id="chipRow"></div>
+      </div>
+    </div>
+    <div class="composer">
+      <div class="composer-inner">
+        <textarea id="composerInput" rows="1" placeholder="Ask about scoring, a task type, or a strategy…"></textarea>
+        <button class="send-btn" id="sendBtn" aria-label="Send">➤</button>
+      </div>
+      <div class="composer-note">Answers come from OpenAI via this app's own server, using only the handbook as context.</div>
+    </div>
+  </div>
+
+  <div class="panel panel-right" id="panelRight">
+    <div class="panel-mobile-header">
+      <span class="title">Studio</span>
+      <button class="icon-btn" id="closeStudio" aria-label="Close studio" style="display:flex;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+    </div>
+
+    <div class="studio-tabs">
+      <button class="studio-tab active" data-tab="dashboard">Dashboard</button>
+      <button class="studio-tab" data-tab="roadmap">Roadmap</button>
+      <button class="studio-tab" data-tab="notebook">Notebook</button>
+    </div>
+
+    <div class="studio-tab-content active" data-tab-content="dashboard">
+      <div class="rings-row">
+        <div class="ring-card" id="ringRoadmap"></div>
+        <div class="ring-card" id="ringTasks"></div>
+      </div>
+      <div class="studio-card">
+        <h3>My progress</h3>
+        <div class="fact-row"><span class="k">Notes saved</span><span class="v" id="notesCountLabel">0</span></div>
+        <div class="fact-row"><span class="k">Tasks scheduled</span><span class="v" id="tasksCountLabel">0</span></div>
+      </div>
+      <div class="studio-card">
+        <h3>Test at a glance</h3>
+        <div class="fact-row"><span class="k">Duration</span><span class="v">~2h 15m</span></div>
+        <div class="fact-row"><span class="k">Modules</span><span class="v">4</span></div>
+        <div class="fact-row"><span class="k">Score range</span><span class="v">10–90</span></div>
+        <div class="fact-row"><span class="k">Results in</span><span class="v">1–2 days</span></div>
+      </div>
+      <div class="studio-card">
+        <h3>Task weight (speaking)</h3>
+        <div class="fact-row"><span class="k">Read Aloud</span><span class="stars">★★★★★</span></div>
+        <div class="fact-row"><span class="k">Repeat Sentence</span><span class="stars">★★★★★</span></div>
+        <div class="fact-row"><span class="k">Retell Lecture</span><span class="stars">★★★★★</span></div>
+        <div class="fact-row"><span class="k">Describe Image</span><span class="stars">★★★</span></div>
+        <div class="fact-row"><span class="k">Answer Short Q</span><span class="stars">★★</span></div>
+      </div>
+      <div class="studio-card">
+        <h3>Try asking</h3>
+        <div id="quickQuestions"></div>
+      </div>
+    </div>
+
+    <div class="studio-tab-content" data-tab-content="roadmap">
+      <div class="roadmap-progress">
+        <div class="roadmap-progress-track"><div class="roadmap-progress-fill" id="roadmapProgressFill"></div></div>
+        <div class="roadmap-progress-label" id="roadmapProgressLabel">Loading roadmap…</div>
+      </div>
+      <div id="roadmapList"></div>
+    </div>
+
+    <div class="studio-tab-content" data-tab-content="notebook">
+      <div class="notebook-add">
+        <input type="text" id="noteTitleInput" placeholder="Note title (optional)">
+        <textarea id="noteContentInput" placeholder="Write a note — a mistake to fix, a phrase to remember, anything…"></textarea>
+        <button id="addNoteBtn">Save note</button>
+      </div>
+      <div id="notesList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="cal-backdrop" id="calBackdrop">
+  <div class="cal-modal">
+    <div class="cal-modal-header">
+      <h2 id="calMonthLabel">Loading…</h2>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" id="calPrev" aria-label="Previous month">‹</button>
+        <button class="cal-today-btn" id="calToday">Today</button>
+        <button class="cal-nav-btn" id="calNext" aria-label="Next month">›</button>
+        <button class="icon-btn always-visible" id="closeCalendar" aria-label="Close calendar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="cal-body">
+      <div class="cal-grid-wrap">
+        <div class="cal-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+      <div class="cal-day-panel">
+        <h3 id="calSelectedLabel">Select a day</h3>
+        <div class="cal-task-add">
+          <input type="text" id="calTaskInput" placeholder="Add a task…">
+          <button id="calAddTaskBtn">Add</button>
+        </div>
+        <div id="calTaskList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cal-backdrop" id="practiceBackdrop">
+  <div class="cal-modal">
+    <div class="cal-modal-header">
+      <h2>Practice</h2>
+      <button class="icon-btn always-visible" id="closePractice" aria-label="Close practice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+    </div>
+    <div class="pmodal-tabs">
+      <button class="pmodal-tab active" data-ptab="flashcards">Flashcards</button>
+      <button class="pmodal-tab" data-ptab="quiz">Quiz</button>
+    </div>
+    <div class="practice-body">
+
+      <div class="pmodal-tab-content active" data-ptab-content="flashcards">
+        <div class="practice-controls">
+          <select id="fcSectionSelect"></select>
+          <input type="text" id="fcCustomTopic" placeholder="or type your own topic…" style="display:none;">
+          <label class="ref-toggle" id="fcRefToggleWrap" style="display:none;">
+            <input type="checkbox" id="fcUseReference"> Include personal reference
+          </label>
+          <button class="practice-generate-btn" id="fcGenerateBtn">Generate flashcards</button>
+        </div>
+
+        <div id="flashcardArea">
+          <div class="practice-empty">Choose a section (or type a topic), then generate a set to begin.</div>
+        </div>
+
+        <div class="panel-title" style="margin-top:18px;">My saved decks</div>
+        <div id="deckList"></div>
+      </div>
+
+      <div class="pmodal-tab-content" data-ptab-content="quiz">
+        <div class="practice-controls">
+          <select id="qzSectionSelect"></select>
+          <input type="text" id="qzCustomTopic" placeholder="or type your own topic…" style="display:none;">
+          <select id="qzCount">
+            <option value="5">5 questions</option>
+            <option value="8">8 questions</option>
+            <option value="10">10 questions</option>
+          </select>
+          <label class="ref-toggle" id="qzRefToggleWrap" style="display:none;">
+            <input type="checkbox" id="qzUseReference"> Include personal reference
+          </label>
+          <button class="practice-generate-btn" id="qzGenerateBtn">Generate quiz</button>
+        </div>
+
+        <div id="quizArea">
+          <div class="practice-empty">Choose a section (or type a topic), then generate a quiz to begin.</div>
+        </div>
+
+        <div class="panel-title" style="margin-top:18px;">Past attempts</div>
+        <div id="quizHistoryList"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const SUGGESTED = [
+  "How is the Speaking score calculated?",
+  "Give me the Read Aloud strategy",
+  "What's the template for Describe Image?",
+  "How do I structure a Re-tell Lecture?",
+  "What are the Write Essay scoring criteria?",
+  "How does PTE compare to IELTS bands?"
+];
+
+let messages = []; // {role, content}
+let referenceAvailable = false;
+let savedNoteContents = new Set(); // dedupe guard for "save reply" buttons
+
+const chatScroll = document.getElementById('chatScroll');
+const heroBlock = document.getElementById('heroBlock');
+const composerInput = document.getElementById('composerInput');
+const sendBtn = document.getElementById('sendBtn');
+const sourceList = document.getElementById('sourceList');
+const chipRow = document.getElementById('chipRow');
+const quickQuestions = document.getElementById('quickQuestions');
+const apiStatus = document.getElementById('apiStatus');
+const apiStatusLabel = document.getElementById('apiStatusLabel');
+const apiStatusLabelShort = document.getElementById('apiStatusLabelShort');
+
+/* ---------------------------------------------------------
+   MOBILE DRAWERS
+--------------------------------------------------------- */
+const panelLeft = document.getElementById('panelLeft');
+const panelRight = document.getElementById('panelRight');
+const drawerBackdrop = document.getElementById('drawerBackdrop');
+
+function openDrawer(panel){
+  closeDrawers();
+  panel.classList.add('open');
+  drawerBackdrop.classList.add('open');
+  document.body.classList.add('drawer-open');
+}
+function closeDrawers(){
+  panelLeft.classList.remove('open');
+  panelRight.classList.remove('open');
+  drawerBackdrop.classList.remove('open');
+  document.body.classList.remove('drawer-open');
+}
+document.getElementById('openSources').addEventListener('click', () => openDrawer(panelLeft));
+document.getElementById('openStudio').addEventListener('click', () => openDrawer(panelRight));
+document.getElementById('closeSources').addEventListener('click', closeDrawers);
+document.getElementById('closeStudio').addEventListener('click', closeDrawers);
+drawerBackdrop.addEventListener('click', closeDrawers);
+window.addEventListener('resize', () => { if(window.innerWidth > 880) closeDrawers(); });
+
+/* ---------------------------------------------------------
+   CIRCULAR PROGRESS RINGS (Dashboard)
+--------------------------------------------------------- */
+function renderRing(containerId, pct, title, sublabel){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  const clamped = Math.max(0, Math.min(100, pct));
+  const r = 30, c = 2 * Math.PI * r;
+  const offset = c - (clamped / 100) * c;
+  el.innerHTML = `
+    <svg viewBox="0 0 80 80">
+      <circle class="ring-track" cx="40" cy="40" r="${r}"></circle>
+      <circle class="ring-fill" cx="40" cy="40" r="${r}"
+        stroke-dasharray="${c}" stroke-dashoffset="${offset}"
+        transform="rotate(-90 40 40)"></circle>
+      <text x="40" y="45" text-anchor="middle"
+        style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;fill:var(--ink);">${clamped}%</text>
+    </svg>
+    <div class="ring-label"><strong>${title}</strong>${sublabel}</div>
+  `;
+}
+renderRing('ringRoadmap', 0, 'Roadmap', 'Loading…');
+renderRing('ringTasks', 0, 'Tasks', 'Loading…');
+
+/* ---------------------------------------------------------
+   STUDIO TABS
+--------------------------------------------------------- */
+document.querySelectorAll('.studio-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.studio-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.studio-tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelector(`.studio-tab-content[data-tab-content="${btn.dataset.tab}"]`).classList.add('active');
+  });
+});
+
+function initChips(){
+  SUGGESTED.slice(0,4).forEach(q => {
+    const c = document.createElement('div');
+    c.className = 'chip';
+    c.textContent = q;
+    c.onclick = () => { composerInput.value = q; sendMessage(); };
+    chipRow.appendChild(c);
+  });
+}
+
+function initQuickQuestions(){
+  SUGGESTED.forEach(q => {
+    const d = document.createElement('div');
+    d.className = 'quick-q';
+    d.textContent = q;
+    d.onclick = () => { composerInput.value = q; closeDrawers(); sendMessage(); };
+    quickQuestions.appendChild(d);
+  });
+}
+
+let sourceTitles = [];
+
+async function loadSources(){
+  try{
+    const res = await fetch('/api/sources');
+    const list = await res.json();
+    sourceTitles = list.map(s => s.title);
+    list.forEach(s => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="dot"></span>${s.title}`;
+      li.onclick = () => {
+        document.querySelectorAll('.source-list li').forEach(el => el.classList.remove('active'));
+        li.classList.add('active');
+        composerInput.value = `Tell me about: ${s.title}`;
+        closeDrawers();
+        composerInput.focus();
+      };
+      sourceList.appendChild(li);
+    });
+    populateSectionSelects();
+  }catch(err){
+    // Sources panel is non-critical; fail silently if the server isn't reachable yet.
+  }
+}
+
+async function checkHealth(){
+  try{
+    const res = await fetch('/api/health');
+    const data = await res.json();
+    if(data.connected){
+      apiStatus.classList.add('ready');
+      apiStatusLabel.textContent = `Connected · ${data.model}`;
+      apiStatusLabelShort.textContent = 'Ready';
+    } else {
+      apiStatusLabel.textContent = 'No API key on server';
+      apiStatusLabelShort.textContent = 'No key';
+    }
+  }catch(err){
+    apiStatusLabel.textContent = 'Server unreachable';
+    apiStatusLabelShort.textContent = 'Offline';
+  }
+}
+
+async function checkReferenceStatus(){
+  const metaEl = document.getElementById('referenceDocMeta');
+  try{
+    const res = await fetch('/api/reference-status');
+    const data = await res.json();
+    referenceAvailable = Boolean(data.available);
+
+    ['fcRefToggleWrap', 'qzRefToggleWrap'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.style.display = referenceAvailable ? 'flex' : 'none';
+    });
+
+    if(!metaEl) return;
+    if(!data.available){
+      metaEl.textContent = 'Not connected — see README';
+      return;
+    }
+    const sourceLabel = data.source === 'gdrive' ? 'Google Drive' : 'local file';
+    metaEl.textContent = `Connected · ${data.pages} pages · ${sourceLabel}`;
+  }catch(err){
+    if(metaEl) metaEl.textContent = 'Not connected — see README';
+  }
+}
+
+initChips();
+initQuickQuestions();
+loadSources();
+checkHealth();
+checkReferenceStatus();
+
+/* ---------------------------------------------------------
+   ROADMAP
+--------------------------------------------------------- */
+const roadmapList = document.getElementById('roadmapList');
+const roadmapProgressFill = document.getElementById('roadmapProgressFill');
+const roadmapProgressLabel = document.getElementById('roadmapProgressLabel');
+
+function escapeHtml(str){
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function loadRoadmap(){
+  try{
+    const res = await fetch('/api/roadmap');
+    const data = await res.json();
+    renderRoadmap(data.roadmap || []);
+  }catch(err){
+    roadmapProgressLabel.textContent = 'Could not load roadmap — is the server running?';
+  }
+}
+
+function renderRoadmap(phases){
+  roadmapList.innerHTML = '';
+  let total = 0, done = 0;
+
+  phases.forEach((phase, idx) => {
+    const phaseEl = document.createElement('div');
+    phaseEl.className = 'phase' + (idx === 0 ? ' open' : '');
+
+    const header = document.createElement('div');
+    header.className = 'phase-header';
+    header.innerHTML = `
+      <span class="phase-chevron">▸</span>
+      <span class="phase-title" style="flex:1;">${escapeHtml(phase.title)}</span>
+      <span class="phase-time">${escapeHtml(phase.timeframe)}</span>
+    `;
+    header.addEventListener('click', () => phaseEl.classList.toggle('open'));
+    phaseEl.appendChild(header);
+
+    const stepsWrap = document.createElement('div');
+    stepsWrap.className = 'phase-steps';
+
+    phase.steps.forEach(step => {
+      total++;
+      if(step.done) done++;
+
+      const item = document.createElement('div');
+      item.className = 'step-item';
+
+      const check = document.createElement('div');
+      check.className = 'step-check' + (step.done ? ' done' : '');
+      check.innerHTML = step.done ? '✓' : '';
+      check.addEventListener('click', () => toggleStep(step.id, !step.done, check, body));
+
+      const body = document.createElement('div');
+      body.className = 'step-body' + (step.done ? ' done' : '');
+      body.innerHTML = `
+        <div class="step-title">${escapeHtml(step.title)}</div>
+        <div class="step-detail">${escapeHtml(step.detail)}</div>
+        <div class="step-why">Why it matters: ${escapeHtml(step.why)}</div>
+      `;
+
+      item.appendChild(check);
+      item.appendChild(body);
+      stepsWrap.appendChild(item);
+    });
+
+    phaseEl.appendChild(stepsWrap);
+    roadmapList.appendChild(phaseEl);
+  });
+
+  updateRoadmapProgress(done, total);
+}
+
+function updateRoadmapProgress(done, total){
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  roadmapProgressFill.style.width = pct + '%';
+  roadmapProgressLabel.textContent = `${done} of ${total} steps complete · ${pct}%`;
+  renderRing('ringRoadmap', pct, 'Roadmap', `${done}/${total} steps`);
+}
+
+async function toggleStep(stepId, newDone, checkEl, bodyEl){
+  checkEl.classList.toggle('done', newDone);
+  checkEl.innerHTML = newDone ? '✓' : '';
+  bodyEl.classList.toggle('done', newDone);
+
+  const doneCount = document.querySelectorAll('.step-check.done').length;
+  const totalCount = document.querySelectorAll('.step-check').length;
+  updateRoadmapProgress(doneCount, totalCount);
+
+  try{
+    await fetch('/api/roadmap/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stepId, done: newDone })
+    });
+  }catch(err){
+    // Non-critical — local state already reflects the click even if the
+    // server write fails; it'll just re-sync on next reload.
+  }
+}
+
+loadRoadmap();
+
+/* ---------------------------------------------------------
+   NOTEBOOK
+--------------------------------------------------------- */
+const notesList = document.getElementById('notesList');
+const noteTitleInput = document.getElementById('noteTitleInput');
+const noteContentInput = document.getElementById('noteContentInput');
+const addNoteBtn = document.getElementById('addNoteBtn');
+
+function formatDate(iso){
+  try{
+    return new Date(iso).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  }catch(e){ return ''; }
+}
+
+async function loadNotes(){
+  try{
+    const res = await fetch('/api/notes');
+    const data = await res.json();
+    renderNotes(data.notes || []);
+  }catch(err){
+    notesList.innerHTML = '<div class="note-empty">Could not load notes — is the server running?</div>';
+  }
+}
+
+function renderNotes(notes){
+  const notesCountLabel = document.getElementById('notesCountLabel');
+  if(notesCountLabel) notesCountLabel.textContent = notes.length;
+
+  if(!notes.length){
+    notesList.innerHTML = '<div class="note-empty">No notes yet. Save a chat reply or write your own above.</div>';
+    return;
+  }
+  notesList.innerHTML = '';
+  notes.forEach(note => {
+    const card = document.createElement('div');
+    card.className = 'note-card';
+    const tag = note.type === 'chat' ? 'Saved reply' : 'Note';
+    card.innerHTML = `
+      <button class="note-delete" aria-label="Delete note" data-id="${note.id}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+      <div class="note-title">${escapeHtml(note.title)}</div>
+      <div class="note-meta">${tag} · ${formatDate(note.createdAt)}</div>
+      <div class="note-content">${escapeHtml(note.content)}</div>
+    `;
+    card.querySelector('.note-delete').addEventListener('click', () => deleteNote(note.id));
+    notesList.appendChild(card);
+  });
+}
+
+async function addNoteRequest(payload){
+  const res = await fetch('/api/notes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if(!res.ok) throw new Error('Save failed');
+  return res.json();
+}
+
+addNoteBtn.addEventListener('click', async () => {
+  const content = noteContentInput.value.trim();
+  if(!content) { noteContentInput.focus(); return; }
+  addNoteBtn.disabled = true;
+  try{
+    await addNoteRequest({ title: noteTitleInput.value, content, type: 'manual' });
+    noteTitleInput.value = '';
+    noteContentInput.value = '';
+    await loadNotes();
+  }catch(err){
+    alert('Could not save note. Is the server running?');
+  }
+  addNoteBtn.disabled = false;
+});
+
+async function deleteNote(id){
+  try{
+    await fetch(`/api/notes/${id}`, { method: 'DELETE' });
+    await loadNotes();
+  }catch(err){
+    alert('Could not delete note. Is the server running?');
+  }
+}
+
+async function saveReplyAsNote(content, btnEl){
+  if(savedNoteContents.has(content)) return;
+  btnEl.disabled = true;
+  try{
+    const title = content.split('\n')[0].slice(0, 60) || 'Saved reply';
+    await addNoteRequest({ title, content, type: 'chat' });
+    savedNoteContents.add(content);
+    btnEl.classList.add('saved');
+    btnEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved to notebook';
+    loadNotes();
+  }catch(err){
+    btnEl.disabled = false;
+    alert('Could not save this reply. Is the server running?');
+  }
+}
+
+loadNotes();
+
+/* ---------------------------------------------------------
+   CALENDAR
+--------------------------------------------------------- */
+const calBackdrop = document.getElementById('calBackdrop');
+const calMonthLabel = document.getElementById('calMonthLabel');
+const calGrid = document.getElementById('calGrid');
+const calSelectedLabel = document.getElementById('calSelectedLabel');
+const calTaskList = document.getElementById('calTaskList');
+const calTaskInput = document.getElementById('calTaskInput');
+const calAddTaskBtn = document.getElementById('calAddTaskBtn');
+const tasksCountLabel = document.getElementById('tasksCountLabel');
+
+const WEEKDAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+const MONTH_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+const today = new Date();
+let calViewYear = today.getFullYear();
+let calViewMonth = today.getMonth(); // 0-indexed
+let calSelectedDate = toISODate(today);
+let allTasks = [];
+let tasksLoaded = false;
+
+function pad2(n){ return String(n).padStart(2, '0'); }
+function toISODate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+
+async function loadTasks(){
+  try{
+    const res = await fetch('/api/tasks');
+    const data = await res.json();
+    allTasks = data.tasks || [];
+  }catch(err){
+    allTasks = [];
+  }
+  tasksLoaded = true;
+  updateTasksRing();
+  if(tasksCountLabel) tasksCountLabel.textContent = allTasks.length;
+}
+
+function updateTasksRing(){
+  const total = allTasks.length;
+  const done = allTasks.filter(t => t.done).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const sublabel = total ? `${done}/${total} done` : 'No tasks yet';
+  renderRing('ringTasks', pct, 'Tasks', sublabel);
+}
+
+function tasksForDate(dateStr){
+  return allTasks.filter(t => t.date === dateStr);
+}
+
+function renderCalendarGrid(){
+  calMonthLabel.textContent = `${MONTH_LONG[calViewMonth]} ${calViewYear}`;
+
+  const firstOfMonth = new Date(calViewYear, calViewMonth, 1);
+  const startOffset = firstOfMonth.getDay();
+  const daysInMonth = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+  const daysInPrevMonth = new Date(calViewYear, calViewMonth, 0).getDate();
+  const todayStr = toISODate(today);
+
+  calGrid.innerHTML = '';
+  for(let i = 0; i < 42; i++){
+    const dayNum = i - startOffset + 1;
+    let cellYear = calViewYear, cellMonth = calViewMonth, cellDay, otherMonth = false;
+
+    if(dayNum < 1){
+      cellDay = daysInPrevMonth + dayNum;
+      cellMonth = calViewMonth - 1;
+      if(cellMonth < 0){ cellMonth = 11; cellYear -= 1; }
+      otherMonth = true;
+    } else if(dayNum > daysInMonth){
+      cellDay = dayNum - daysInMonth;
+      cellMonth = calViewMonth + 1;
+      if(cellMonth > 11){ cellMonth = 0; cellYear += 1; }
+      otherMonth = true;
+    } else {
+      cellDay = dayNum;
+    }
+
+    const cellDate = new Date(cellYear, cellMonth, cellDay);
+    const cellStr = toISODate(cellDate);
+    const count = tasksForDate(cellStr).length;
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-day' +
+      (otherMonth ? ' other-month' : '') +
+      (cellStr === todayStr ? ' today' : '') +
+      (cellStr === calSelectedDate ? ' selected' : '');
+    cell.innerHTML = `
+      <div class="cal-day-num">${cellDay}</div>
+      <div class="cal-day-dots">${'<span class="cal-day-dot"></span>'.repeat(Math.min(count, 3))}</div>
+    `;
+    cell.addEventListener('click', () => selectDay(cellStr));
+    calGrid.appendChild(cell);
+  }
+}
+
+function selectDay(dateStr){
+  calSelectedDate = dateStr;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if(m - 1 !== calViewMonth || y !== calViewYear){
+    calViewYear = y;
+    calViewMonth = m - 1;
+  }
+  renderCalendarGrid();
+  renderDayPanel();
+}
+
+function renderDayPanel(){
+  const [y, m, d] = calSelectedDate.split('-').map(Number);
+  const dateObj = new Date(y, m - 1, d);
+  calSelectedLabel.textContent = dateObj.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+
+  const tasks = tasksForDate(calSelectedDate);
+  if(!tasks.length){
+    calTaskList.innerHTML = '<div class="cal-day-empty">No tasks yet for this day.</div>';
+    return;
+  }
+  calTaskList.innerHTML = '';
+  tasks.forEach(task => {
+    const item = document.createElement('div');
+    item.className = 'cal-task-item';
+    item.innerHTML = `
+      <div class="cal-task-check${task.done ? ' done' : ''}">${task.done ? '✓' : ''}</div>
+      <div class="cal-task-title${task.done ? ' done' : ''}">${escapeHtml(task.title)}</div>
+      <button class="cal-task-delete" aria-label="Delete task">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+    `;
+    item.querySelector('.cal-task-check').addEventListener('click', () => toggleTask(task.id, !task.done));
+    item.querySelector('.cal-task-delete').addEventListener('click', () => deleteTask(task.id));
+    calTaskList.appendChild(item);
+  });
+}
+
+async function addTask(){
+  const title = calTaskInput.value.trim();
+  if(!title) return;
+  calAddTaskBtn.disabled = true;
+  try{
+    const res = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: calSelectedDate, title })
+    });
+    if(!res.ok) throw new Error('Save failed');
+    calTaskInput.value = '';
+    await loadTasks();
+    renderCalendarGrid();
+    renderDayPanel();
+  }catch(err){
+    alert('Could not save task. Is the server running?');
+  }
+  calAddTaskBtn.disabled = false;
+}
+
+async function toggleTask(id, done){
+  try{
+    await fetch(`/api/tasks/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ done })
+    });
+    await loadTasks();
+    renderCalendarGrid();
+    renderDayPanel();
+  }catch(err){
+    alert('Could not update task. Is the server running?');
+  }
+}
+
+async function deleteTask(id){
+  try{
+    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+    await loadTasks();
+    renderCalendarGrid();
+    renderDayPanel();
+  }catch(err){
+    alert('Could not delete task. Is the server running?');
+  }
+}
+
+calAddTaskBtn.addEventListener('click', addTask);
+calTaskInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){ e.preventDefault(); addTask(); }
+});
+
+document.getElementById('calPrev').addEventListener('click', () => {
+  calViewMonth -= 1;
+  if(calViewMonth < 0){ calViewMonth = 11; calViewYear -= 1; }
+  renderCalendarGrid();
+});
+document.getElementById('calNext').addEventListener('click', () => {
+  calViewMonth += 1;
+  if(calViewMonth > 11){ calViewMonth = 0; calViewYear += 1; }
+  renderCalendarGrid();
+});
+document.getElementById('calToday').addEventListener('click', () => {
+  calViewYear = today.getFullYear();
+  calViewMonth = today.getMonth();
+  selectDay(toISODate(today));
+});
+
+async function openCalendar(){
+  calBackdrop.classList.add('open');
+  document.body.classList.add('drawer-open');
+  if(!tasksLoaded) await loadTasks();
+  renderCalendarGrid();
+  renderDayPanel();
+}
+function closeCalendarModal(){
+  calBackdrop.classList.remove('open');
+  document.body.classList.remove('drawer-open');
+}
+document.getElementById('openCalendar').addEventListener('click', openCalendar);
+document.getElementById('closeCalendar').addEventListener('click', closeCalendarModal);
+calBackdrop.addEventListener('click', (e) => { if(e.target === calBackdrop) closeCalendarModal(); });
+
+loadTasks();
+
+/* ---------------------------------------------------------
+   PRACTICE — shared setup (Flashcards + Quiz)
+--------------------------------------------------------- */
+const practiceBackdrop = document.getElementById('practiceBackdrop');
+
+function populateSectionSelects(){
+  [document.getElementById('fcSectionSelect'), document.getElementById('qzSectionSelect')].forEach(sel => {
+    if(!sel || sel.dataset.populated) return;
+    sel.innerHTML = '<option value="">Choose a section…</option>';
+    sourceTitles.forEach(title => {
+      const opt = document.createElement('option');
+      opt.value = title;
+      opt.textContent = title;
+      sel.appendChild(opt);
+    });
+    const customOpt = document.createElement('option');
+    customOpt.value = '__custom__';
+    customOpt.textContent = 'Custom topic…';
+    sel.appendChild(customOpt);
+    sel.dataset.populated = '1';
+  });
+}
+
+function wireCustomTopicToggle(selectId, inputId){
+  const sel = document.getElementById(selectId);
+  const input = document.getElementById(inputId);
+  sel.addEventListener('change', () => {
+    input.style.display = sel.value === '__custom__' ? 'block' : 'none';
+    if(sel.value !== '__custom__') input.value = '';
+  });
+}
+wireCustomTopicToggle('fcSectionSelect', 'fcCustomTopic');
+wireCustomTopicToggle('qzSectionSelect', 'qzCustomTopic');
+
+function readTopicSelection(selectId, inputId){
+  const sel = document.getElementById(selectId);
+  const input = document.getElementById(inputId);
+  if(sel.value === '__custom__'){
+    return { sectionTitle: null, topic: input.value.trim() };
+  }
+  return { sectionTitle: sel.value || null, topic: null };
+}
+
+function openPractice(){
+  practiceBackdrop.classList.add('open');
+  document.body.classList.add('drawer-open');
+  loadDecks();
+  loadQuizHistory();
+}
+function closePractice(){
+  practiceBackdrop.classList.remove('open');
+  document.body.classList.remove('drawer-open');
+}
+document.getElementById('openPractice').addEventListener('click', openPractice);
+document.getElementById('closePractice').addEventListener('click', closePractice);
+practiceBackdrop.addEventListener('click', (e) => { if(e.target === practiceBackdrop) closePractice(); });
+
+document.querySelectorAll('.pmodal-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pmodal-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.pmodal-tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelector(`.pmodal-tab-content[data-ptab-content="${btn.dataset.ptab}"]`).classList.add('active');
+  });
+});
+
+/* ---------------------------------------------------------
+   FLASHCARDS
+--------------------------------------------------------- */
+const flashcardArea = document.getElementById('flashcardArea');
+const deckList = document.getElementById('deckList');
+let fcState = { cards: [], topic: '', index: 0, deckId: null };
+
+document.getElementById('fcGenerateBtn').addEventListener('click', async () => {
+  const { sectionTitle, topic } = readTopicSelection('fcSectionSelect', 'fcCustomTopic');
+  if(!sectionTitle && !topic){
+    flashcardArea.innerHTML = '<div class="practice-error">Choose a section or type a topic first.</div>';
+    return;
+  }
+  const useReference = document.getElementById('fcUseReference').checked;
+  const btn = document.getElementById('fcGenerateBtn');
+  btn.disabled = true;
+  flashcardArea.innerHTML = '<div class="practice-loading"><div class="thinking"><span></span><span></span><span></span></div>Generating flashcards…</div>';
+
+  try{
+    const res = await fetch('/api/flashcards/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sectionTitle, topic, useReference })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      flashcardArea.innerHTML = `<div class="practice-error">${escapeHtml(data.error || 'Could not generate flashcards.')}</div>`;
+      btn.disabled = false;
+      return;
+    }
+    fcState = { cards: data.cards, topic: data.topic, index: 0, deckId: null };
+    renderFlashcardViewer();
+  }catch(err){
+    flashcardArea.innerHTML = `<div class="practice-error">Connection error: ${escapeHtml(err.message)}</div>`;
+  }
+  btn.disabled = false;
+});
+
+function renderFlashcardViewer(){
+  if(!fcState.cards.length){
+    flashcardArea.innerHTML = '<div class="practice-empty">Choose a section (or type a topic), then generate a set to begin.</div>';
+    return;
+  }
+  const card = fcState.cards[fcState.index];
+  flashcardArea.innerHTML = `
+    <div class="flashcard" id="flashcardEl">
+      <div class="flashcard-inner">
+        <div class="flashcard-face flashcard-front">
+          <div class="fc-tag">${escapeHtml(fcState.topic)}</div>
+          <div>${escapeHtml(card.front)}</div>
+        </div>
+        <div class="flashcard-face flashcard-back">
+          <div class="fc-tag">Answer</div>
+          <div>${escapeHtml(card.back)}</div>
+        </div>
+      </div>
+    </div>
+    <div class="flashcard-hint">Tap the card to flip it</div>
+    <div class="flashcard-nav">
+      <button id="fcPrevBtn" ${fcState.index === 0 ? 'disabled' : ''}>‹ Prev</button>
+      <span class="flashcard-counter">${fcState.index + 1} / ${fcState.cards.length}</span>
+      <button id="fcNextBtn" ${fcState.index === fcState.cards.length - 1 ? 'disabled' : ''}>Next ›</button>
+    </div>
+    <button class="deck-save-btn" id="fcSaveDeckBtn">${fcState.deckId ? '✓ Saved to My decks' : '💾 Save this deck'}</button>
+  `;
+  document.getElementById('flashcardEl').addEventListener('click', (e) => {
+    e.currentTarget.classList.toggle('flipped');
+  });
+  document.getElementById('fcPrevBtn').addEventListener('click', () => {
+    if(fcState.index > 0){ fcState.index--; renderFlashcardViewer(); }
+  });
+  document.getElementById('fcNextBtn').addEventListener('click', () => {
+    if(fcState.index < fcState.cards.length - 1){ fcState.index++; renderFlashcardViewer(); }
+  });
+  const saveBtn = document.getElementById('fcSaveDeckBtn');
+  if(fcState.deckId){
+    saveBtn.classList.add('saved');
+  } else {
+    saveBtn.addEventListener('click', saveCurrentDeck);
+  }
+}
+
+async function saveCurrentDeck(){
+  const btn = document.getElementById('fcSaveDeckBtn');
+  btn.disabled = true;
+  try{
+    const res = await fetch('/api/flashcards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: fcState.topic, cards: fcState.cards })
+    });
+    const data = await res.json();
+    if(res.ok){
+      fcState.deckId = data.deck.id;
+      renderFlashcardViewer();
+      loadDecks();
+    }
+  }catch(err){
+    alert('Could not save deck. Is the server running?');
+  }
+  btn.disabled = false;
+}
+
+async function loadDecks(){
+  try{
+    const res = await fetch('/api/flashcards');
+    const data = await res.json();
+    renderDeckList(data.decks || []);
+  }catch(err){
+    deckList.innerHTML = '';
+  }
+}
+
+function renderDeckList(decks){
+  if(!decks.length){
+    deckList.innerHTML = '<div class="practice-empty">No saved decks yet.</div>';
+    return;
+  }
+  deckList.innerHTML = '';
+  decks.forEach(deck => {
+    const item = document.createElement('div');
+    item.className = 'deck-item';
+    item.innerHTML = `
+      <div class="deck-item-info">
+        <div class="deck-item-title">${escapeHtml(deck.topic)}</div>
+        <div class="deck-item-meta">${deck.cards.length} cards · ${formatDate(deck.createdAt)}</div>
+      </div>
+      <button class="item-delete" aria-label="Delete deck">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+    `;
+    item.addEventListener('click', (e) => {
+      if(e.target.closest('.item-delete')) return;
+      fcState = { cards: deck.cards, topic: deck.topic, index: 0, deckId: deck.id };
+      renderFlashcardViewer();
+    });
+    item.querySelector('.item-delete').addEventListener('click', async () => {
+      try{
+        await fetch(`/api/flashcards/${deck.id}`, { method: 'DELETE' });
+        if(fcState.deckId === deck.id){ fcState = { cards: [], topic: '', index: 0, deckId: null }; renderFlashcardViewer(); }
+        loadDecks();
+      }catch(err){
+        alert('Could not delete deck.');
+      }
+    });
+    deckList.appendChild(item);
+  });
+}
+
+/* ---------------------------------------------------------
+   QUIZ
+--------------------------------------------------------- */
+const quizArea = document.getElementById('quizArea');
+const quizHistoryList = document.getElementById('quizHistoryList');
+let qzState = { questions: [], topic: '', index: 0, correctCount: 0, answered: false, selected: null, saved: false };
+
+document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
+  const { sectionTitle, topic } = readTopicSelection('qzSectionSelect', 'qzCustomTopic');
+  if(!sectionTitle && !topic){
+    quizArea.innerHTML = '<div class="practice-error">Choose a section or type a topic first.</div>';
+    return;
+  }
+  const useReference = document.getElementById('qzUseReference').checked;
+  const count = document.getElementById('qzCount').value;
+  const btn = document.getElementById('qzGenerateBtn');
+  btn.disabled = true;
+  quizArea.innerHTML = '<div class="practice-loading"><div class="thinking"><span></span><span></span><span></span></div>Generating quiz…</div>';
+
+  try{
+    const res = await fetch('/api/quiz/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sectionTitle, topic, useReference, count })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      quizArea.innerHTML = `<div class="practice-error">${escapeHtml(data.error || 'Could not generate quiz.')}</div>`;
+      btn.disabled = false;
+      return;
+    }
+    qzState = { questions: data.questions, topic: data.topic, index: 0, correctCount: 0, answered: false, selected: null, saved: false };
+    renderQuizQuestion();
+  }catch(err){
+    quizArea.innerHTML = `<div class="practice-error">Connection error: ${escapeHtml(err.message)}</div>`;
+  }
+  btn.disabled = false;
+});
+
+function renderQuizQuestion(){
+  if(!qzState.questions.length){
+    quizArea.innerHTML = '<div class="practice-empty">Choose a section (or type a topic), then generate a quiz to begin.</div>';
+    return;
+  }
+  const q = qzState.questions[qzState.index];
+  const optionsHtml = q.options.map((opt, i) => `
+    <button class="quiz-option" data-idx="${i}">${escapeHtml(opt)}</button>
+  `).join('');
+
+  quizArea.innerHTML = `
+    <div class="quiz-progress">${escapeHtml(qzState.topic)} · Question ${qzState.index + 1} of ${qzState.questions.length}</div>
+    <div class="quiz-question">${escapeHtml(q.question)}</div>
+    <div id="quizOptions">${optionsHtml}</div>
+    <div id="quizExplanationWrap"></div>
+  `;
+
+  document.querySelectorAll('#quizOptions .quiz-option').forEach(btn => {
+    btn.addEventListener('click', () => selectQuizAnswer(Number(btn.dataset.idx)));
+  });
+}
+
+function selectQuizAnswer(idx){
+  if(qzState.answered) return;
+  qzState.answered = true;
+  qzState.selected = idx;
+  const q = qzState.questions[qzState.index];
+  const isCorrect = idx === q.answerIndex;
+  if(isCorrect) qzState.correctCount++;
+
+  document.querySelectorAll('#quizOptions .quiz-option').forEach((btn, i) => {
+    btn.disabled = true;
+    if(i === q.answerIndex) btn.classList.add('correct');
+    else if(i === idx) btn.classList.add('incorrect');
+  });
+
+  const isLast = qzState.index === qzState.questions.length - 1;
+  document.getElementById('quizExplanationWrap').innerHTML = `
+    <div class="quiz-explanation">${isCorrect ? '✓ Correct. ' : '✗ Not quite. '}${escapeHtml(q.explanation || '')}</div>
+    <button class="quiz-next-btn" id="quizNextBtn">${isLast ? 'See results' : 'Next question ›'}</button>
+  `;
+  document.getElementById('quizNextBtn').addEventListener('click', () => {
+    if(isLast){ renderQuizResult(); }
+    else { qzState.index++; qzState.answered = false; qzState.selected = null; renderQuizQuestion(); }
+  });
+}
+
+function renderQuizResult(){
+  const total = qzState.questions.length;
+  const score = qzState.correctCount;
+  quizArea.innerHTML = `
+    <div class="quiz-result">
+      <div class="score-big">${score}/${total}</div>
+      <div class="score-label">${escapeHtml(qzState.topic)}</div>
+      <div class="quiz-result-actions">
+        <button class="quiz-save-result-btn" id="quizSaveResultBtn">${qzState.saved ? '✓ Saved' : 'Save result'}</button>
+        <button class="quiz-retry-btn" id="quizRetryBtn">Try another</button>
+      </div>
+    </div>
+  `;
+  const saveBtn = document.getElementById('quizSaveResultBtn');
+  if(qzState.saved){
+    saveBtn.disabled = true;
+  } else {
+    saveBtn.addEventListener('click', async () => {
+      saveBtn.disabled = true;
+      try{
+        await fetch('/api/quiz-history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic: qzState.topic, score, total })
+        });
+        qzState.saved = true;
+        saveBtn.textContent = '✓ Saved';
+        loadQuizHistory();
+      }catch(err){
+        saveBtn.disabled = false;
+        alert('Could not save result. Is the server running?');
+      }
+    });
+  }
+  document.getElementById('quizRetryBtn').addEventListener('click', () => {
+    qzState = { questions: [], topic: '', index: 0, correctCount: 0, answered: false, selected: null, saved: false };
+    renderQuizQuestion();
+  });
+}
+
+async function loadQuizHistory(){
+  try{
+    const res = await fetch('/api/quiz-history');
+    const data = await res.json();
+    renderQuizHistoryList(data.history || []);
+  }catch(err){
+    quizHistoryList.innerHTML = '';
+  }
+}
+
+function renderQuizHistoryList(history){
+  if(!history.length){
+    quizHistoryList.innerHTML = '<div class="practice-empty">No attempts yet.</div>';
+    return;
+  }
+  quizHistoryList.innerHTML = '';
+  history.forEach(entry => {
+    const pct = entry.total ? entry.score / entry.total : 0;
+    const badgeClass = pct >= 0.8 ? 'good' : pct >= 0.5 ? 'mid' : 'low';
+    const item = document.createElement('div');
+    item.className = 'quiz-history-item';
+    item.innerHTML = `
+      <div class="quiz-history-info">
+        <div class="quiz-history-title">${escapeHtml(entry.topic)}</div>
+        <div class="quiz-history-meta">${formatDate(entry.createdAt)}</div>
+      </div>
+      <span class="quiz-score-badge ${badgeClass}">${entry.score}/${entry.total}</span>
+      <button class="item-delete" aria-label="Delete result">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+    `;
+    item.querySelector('.item-delete').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try{
+        await fetch(`/api/quiz-history/${entry.id}`, { method: 'DELETE' });
+        loadQuizHistory();
+      }catch(err){
+        alert('Could not delete result.');
+      }
+    });
+    quizHistoryList.appendChild(item);
+  });
+}
+
+/* ---------------------------------------------------------
+   CHAT LOGIC
+--------------------------------------------------------- */
+composerInput.addEventListener('input', () => {
+  composerInput.style.height = 'auto';
+  composerInput.style.height = Math.min(composerInput.scrollHeight, 140) + 'px';
+});
+composerInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' && !e.shiftKey && window.innerWidth > 880){
+    e.preventDefault();
+    sendMessage();
+  }
+});
+sendBtn.addEventListener('click', sendMessage);
+
+// very small markdown-ish renderer (bold, line breaks, bullet lists)
+function renderMarkdown(text){
+  let html = escapeHtml(text);
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  const lines = html.split('\n');
+  let out = '';
+  let inList = false;
+  for(const line of lines){
+    const trimmed = line.trim();
+    if(/^[-•]\s+/.test(trimmed)){
+      if(!inList){ out += '<ul>'; inList = true; }
+      out += `<li>${trimmed.replace(/^[-•]\s+/, '')}</li>`;
+    } else {
+      if(inList){ out += '</ul>'; inList = false; }
+      if(trimmed.length) out += `<p>${trimmed}</p>`;
+    }
+  }
+  if(inList) out += '</ul>';
+  return out || `<p>${html}</p>`;
+}
+
+function addMessage(role, content, referenceInfo){
+  if(heroBlock) heroBlock.style.display = 'none';
+  const msg = document.createElement('div');
+  msg.className = `msg ${role}`;
+  const avatar = role === 'user' ? 'YOU' : 'PTE';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = renderMarkdown(content);
+
+  const avatarEl = document.createElement('div');
+  avatarEl.className = 'avatar';
+  avatarEl.textContent = avatar;
+
+  msg.appendChild(avatarEl);
+  msg.appendChild(bubble);
+
+  if(role === 'assistant'){
+    const actions = document.createElement('div');
+    actions.className = 'msg-actions';
+
+    if(referenceInfo && referenceInfo.pages && referenceInfo.pages.length){
+      const pageList = [...new Set(referenceInfo.pages)].join(', ');
+      const refChip = document.createElement('span');
+      refChip.className = 'ref-chip';
+      refChip.title = 'Short excerpts from your personal reference material were included as context for this answer';
+      refChip.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Personal reference · p. ${pageList}`;
+      actions.appendChild(refChip);
+    }
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'save-btn';
+    saveBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Save to notebook';
+    saveBtn.addEventListener('click', () => saveReplyAsNote(content, saveBtn));
+    actions.appendChild(saveBtn);
+
+    bubble.appendChild(actions);
+  }
+
+  chatScroll.appendChild(msg);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+  return msg;
+}
+
+function addThinking(){
+  const msg = document.createElement('div');
+  msg.className = 'msg assistant';
+  msg.id = 'thinkingMsg';
+  msg.innerHTML = `<div class="avatar">PTE</div><div class="bubble"><div class="thinking"><span></span><span></span><span></span></div></div>`;
+  chatScroll.appendChild(msg);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+}
+function removeThinking(){
+  const t = document.getElementById('thinkingMsg');
+  if(t) t.remove();
+}
+
+async function sendMessage(){
+  const text = composerInput.value.trim();
+  if(!text) return;
+
+  addMessage('user', text);
+  messages.push({role:'user', content:text});
+  composerInput.value = '';
+  composerInput.style.height = 'auto';
+  sendBtn.disabled = true;
+  addThinking();
+
+  try{
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages })
+    });
+
+    const data = await res.json();
+    removeThinking();
+
+    if(!res.ok){
+      addMessage('assistant', `**Something went wrong:** ${data.error || 'Unknown server error.'}`);
+      sendBtn.disabled = false;
+      return;
+    }
+
+    messages.push({role:'assistant', content: data.reply});
+    addMessage('assistant', data.reply, data.reference);
+  }catch(err){
+    removeThinking();
+    addMessage('assistant', `**Connection error:** ${err.message}. Is the server running?`);
+  }
+  sendBtn.disabled = false;
+}
+</script>
+</body>
+</html>
