@@ -95,22 +95,16 @@
     flex-shrink:0;
   }
   .status-pill{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:11px;
-    letter-spacing:0.03em;
-    text-transform:uppercase;
-    color:var(--muted);
-    display:flex;align-items:center;gap:6px;
-    padding:5px 10px;
+    display:flex;align-items:center;justify-content:center;
+    width:26px;height:26px;
     border:1px solid var(--line);
-    border-radius:20px;
+    border-radius:50%;
     background:var(--paper);
-    white-space:nowrap;
+    flex-shrink:0;
+    cursor:default;
   }
-  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-red);flex-shrink:0;}
+  .status-dot{width:9px;height:9px;border-radius:50%;background:var(--accent-red);flex-shrink:0;}
   .status-pill.ready .status-dot{background:var(--accent-teal);}
-  .status-label-full{display:inline;}
-  .status-label-short{display:none;}
 
   /* DRAWER BACKDROP (mobile only) */
   .drawer-backdrop{
@@ -416,12 +410,6 @@
   .snapshot-item .snap-k{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;}
 
   /* DASHBOARD — task priority as weighted bars, not repeated star rows */
-  .priority-list{display:flex; flex-direction:column; gap:9px;}
-  .priority-row{display:flex; align-items:center; gap:10px;}
-  .priority-row .p-label{font-size:12px; width:118px; flex-shrink:0; color:var(--ink);}
-  .priority-row .p-track{flex:1; height:5px; border-radius:4px; background:var(--line); overflow:hidden;}
-  .priority-row .p-fill{height:100%; border-radius:4px; background:var(--accent-gold); transition:width .5s var(--ease);}
-  .priority-row .p-pct{font-size:10.5px; color:var(--muted); font-family:'IBM Plex Mono',monospace; width:30px; text-align:right; flex-shrink:0;}
 
 
   /* ROADMAP */
@@ -569,6 +557,16 @@
   .cal-task-delete:hover{color:var(--accent-red);}
   .cal-task-delete svg{width:12px;height:12px;}
   .cal-day-empty{font-size:12px;color:var(--muted);padding:6px 0;}
+
+  /* CALENDAR — embedded in Dashboard tab (not a modal anymore) */
+  .cal-embed-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
+  .cal-embed-header h3{font-family:'Source Serif 4',serif;font-size:14.5px;margin:0;font-weight:700;}
+  .cal-embed .cal-body{flex-direction:column;overflow:visible;}
+  .cal-embed .cal-grid-wrap{padding:0;overflow:visible;}
+  .cal-embed .cal-day-panel{
+    border-left:none;border-top:1px solid var(--line);
+    min-width:0;padding:14px 0 0;margin-top:14px;background:none;
+  }
 
   /* PRACTICE MODAL (Flashcards + Quiz) */
   .pmodal-tabs{
@@ -718,9 +716,6 @@
     .icon-btn{display:flex;}
     .brand{font-size:15.5px;}
     .brand .mark{width:24px;height:24px;font-size:10px;}
-    .status-label-full{display:none;}
-    .status-label-short{display:inline;}
-    .status-pill{padding:5px 9px;}
 
     .drawer-backdrop{display:block;}
 
@@ -774,7 +769,6 @@
   @media (max-width:420px){
     .brand span.brand-text{display:none;}
     .topbar{padding:0 12px; padding-top:var(--safe-t);}
-    .status-pill{padding:5px 7px;}
   }
 </style>
 </head>
@@ -789,10 +783,8 @@
       <div class="brand"><div class="mark">PTE</div><span class="brand-text">PTE Prep Hub</span></div>
     </div>
     <div class="topbar-right">
-      <div class="status-pill" id="apiStatus">
+      <div class="status-pill" id="apiStatus" title="Checking server…">
         <span class="status-dot"></span>
-        <span class="status-label-full" id="apiStatusLabel">Checking server…</span>
-        <span class="status-label-short" id="apiStatusLabelShort">···</span>
       </div>
       <button class="icon-btn always-visible" id="openCalendar" aria-label="Open calendar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -875,14 +867,29 @@
         <div class="snapshot-item"><span class="snap-v">10–90</span><span class="snap-k">Score range</span></div>
         <div class="snapshot-item"><span class="snap-v">1–2 days</span><span class="snap-k">Results in</span></div>
       </div>
-      <div class="studio-card">
-        <h3>Speaking task priority</h3>
-        <div class="priority-list">
-          <div class="priority-row"><span class="p-label">Read Aloud</span><div class="p-track"><div class="p-fill" style="width:100%"></div></div><span class="p-pct">High</span></div>
-          <div class="priority-row"><span class="p-label">Repeat Sentence</span><div class="p-track"><div class="p-fill" style="width:100%"></div></div><span class="p-pct">High</span></div>
-          <div class="priority-row"><span class="p-label">Retell Lecture</span><div class="p-track"><div class="p-fill" style="width:100%"></div></div><span class="p-pct">High</span></div>
-          <div class="priority-row"><span class="p-label">Describe Image</span><div class="p-track"><div class="p-fill" style="width:60%"></div></div><span class="p-pct">Med</span></div>
-          <div class="priority-row"><span class="p-label">Answer Short Q</span><div class="p-track"><div class="p-fill" style="width:35%"></div></div><span class="p-pct">Low</span></div>
+
+      <div class="studio-card cal-embed">
+        <div class="cal-embed-header">
+          <h3 id="calMonthLabel">Loading…</h3>
+          <div class="cal-nav">
+            <button class="cal-nav-btn" id="calPrev" aria-label="Previous month">‹</button>
+            <button class="cal-today-btn" id="calToday">Today</button>
+            <button class="cal-nav-btn" id="calNext" aria-label="Next month">›</button>
+          </div>
+        </div>
+        <div class="cal-body">
+          <div class="cal-grid-wrap">
+            <div class="cal-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+          <div class="cal-day-panel">
+            <h3 id="calSelectedLabel">Select a day</h3>
+            <div class="cal-task-add">
+              <input type="text" id="calTaskInput" placeholder="Add a task…">
+              <button id="calAddTaskBtn">Add</button>
+            </div>
+            <div id="calTaskList"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -902,36 +909,6 @@
         <button id="addNoteBtn">Save note</button>
       </div>
       <div id="notesList"></div>
-    </div>
-  </div>
-</div>
-
-<div class="cal-backdrop" id="calBackdrop">
-  <div class="cal-modal">
-    <div class="cal-modal-header">
-      <h2 id="calMonthLabel">Loading…</h2>
-      <div class="cal-nav">
-        <button class="cal-nav-btn" id="calPrev" aria-label="Previous month">‹</button>
-        <button class="cal-today-btn" id="calToday">Today</button>
-        <button class="cal-nav-btn" id="calNext" aria-label="Next month">›</button>
-        <button class="icon-btn always-visible" id="closeCalendar" aria-label="Close calendar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
-        </button>
-      </div>
-    </div>
-    <div class="cal-body">
-      <div class="cal-grid-wrap">
-        <div class="cal-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
-        <div class="cal-grid" id="calGrid"></div>
-      </div>
-      <div class="cal-day-panel">
-        <h3 id="calSelectedLabel">Select a day</h3>
-        <div class="cal-task-add">
-          <input type="text" id="calTaskInput" placeholder="Add a task…">
-          <button id="calAddTaskBtn">Add</button>
-        </div>
-        <div id="calTaskList"></div>
-      </div>
     </div>
   </div>
 </div>
@@ -1016,8 +993,6 @@ const sendBtn = document.getElementById('sendBtn');
 const sourceList = document.getElementById('sourceList');
 const chipRow = document.getElementById('chipRow');
 const apiStatus = document.getElementById('apiStatus');
-const apiStatusLabel = document.getElementById('apiStatusLabel');
-const apiStatusLabelShort = document.getElementById('apiStatusLabelShort');
 
 /* ---------------------------------------------------------
    MOBILE DRAWERS
@@ -1184,15 +1159,14 @@ async function checkHealth(){
     const data = await res.json();
     if(data.connected){
       apiStatus.classList.add('ready');
-      apiStatusLabel.textContent = `Connected · ${data.model}`;
-      apiStatusLabelShort.textContent = 'Ready';
+      apiStatus.title = 'Connected';
     } else {
-      apiStatusLabel.textContent = 'No API key on server';
-      apiStatusLabelShort.textContent = 'No key';
+      apiStatus.classList.remove('ready');
+      apiStatus.title = 'No API key on server';
     }
   }catch(err){
-    apiStatusLabel.textContent = 'Server unreachable';
-    apiStatusLabelShort.textContent = 'Offline';
+    apiStatus.classList.remove('ready');
+    apiStatus.title = 'Server unreachable';
   }
 }
 
@@ -1435,7 +1409,6 @@ loadNotes();
 /* ---------------------------------------------------------
    CALENDAR
 --------------------------------------------------------- */
-const calBackdrop = document.getElementById('calBackdrop');
 const calMonthLabel = document.getElementById('calMonthLabel');
 const calGrid = document.getElementById('calGrid');
 const calSelectedLabel = document.getElementById('calSelectedLabel');
@@ -1634,22 +1607,19 @@ document.getElementById('calToday').addEventListener('click', () => {
   selectDay(toISODate(today));
 });
 
-async function openCalendar(){
-  calBackdrop.classList.add('open');
-  document.body.classList.add('drawer-open');
+// Calendar now lives inline in the Dashboard tab (not a modal). The topbar
+// button jumps straight to it — opening the Studio drawer on mobile, where
+// Dashboard is the default active tab; a no-op on desktop, where the
+// Studio panel (and calendar) is already always visible.
+document.getElementById('openCalendar').addEventListener('click', () => openDrawer(panelRight));
+
+async function initCalendar(){
   if(!tasksLoaded) await loadTasks();
   renderCalendarGrid();
   renderDayPanel();
 }
-function closeCalendarModal(){
-  calBackdrop.classList.remove('open');
-  document.body.classList.remove('drawer-open');
-}
-document.getElementById('openCalendar').addEventListener('click', openCalendar);
-document.getElementById('closeCalendar').addEventListener('click', closeCalendarModal);
-calBackdrop.addEventListener('click', (e) => { if(e.target === calBackdrop) closeCalendarModal(); });
 
-loadTasks();
+loadTasks().then(initCalendar);
 
 /* ---------------------------------------------------------
    PRACTICE — shared setup (Flashcards + Quiz)
