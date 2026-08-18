@@ -22,7 +22,7 @@ const REFERENCE_PDF_DRIVE_URL = process.env.REFERENCE_PDF_DRIVE_URL;
 // multer itself. 50MB covers a large scanned-text ebook comfortably.
 const libraryUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 },
+  limits: { fileSize: 150 * 1024 * 1024 },
   fileFilter: (req, file, cb) => cb(null, file.mimetype === 'application/pdf')
 });
 
