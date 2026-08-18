@@ -175,14 +175,6 @@
     background:var(--line); color:var(--muted); font-size:9px; letter-spacing:0.04em;
     text-transform:uppercase; vertical-align:1px;
   }
-  .library-upload-btn{
-    width:100%; margin-bottom:10px; padding:9px 10px;
-    border:1px dashed var(--accent-teal); border-radius:10px;
-    background:none; color:var(--accent-teal); font-family:inherit; font-size:12.5px; font-weight:600;
-    cursor:pointer; transition:background 0.15s;
-  }
-  .library-upload-btn:hover{ background:rgba(47,123,109,0.08); }
-  .library-upload-btn:disabled{ opacity:0.6; cursor:default; }
   .library-upload-status{ font-size:11.5px; color:var(--muted); margin:-4px 0 10px 2px; min-height:14px; }
   .library-upload-status.error{ color:var(--accent-red); }
   .library-upload-status.ok{ color:var(--accent-teal); }
@@ -195,12 +187,6 @@
   .library-item .li-info{ flex:1; min-width:0; }
   .library-item .li-title{ font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .library-item .li-meta{ font-size:10.5px; color:var(--muted); }
-  .library-item .li-delete{
-    border:none; background:none; color:var(--muted); cursor:pointer; padding:4px;
-    display:flex; align-items:center; border-radius:6px; flex-shrink:0;
-  }
-  .library-item .li-delete:hover{ color:var(--accent-red); background:rgba(176,67,42,0.08); }
-  .library-item .li-delete svg{ width:14px; height:14px; }
   .lib-chip{
     display:inline-flex; align-items:center; gap:5px;
     font-family:'IBM Plex Mono', monospace; font-size:10.5px;
@@ -784,13 +770,11 @@
       </button>
     </div>
     <div class="panel-title">Library <span class="badge-primary">Primary</span></div>
-    <button class="library-upload-btn" id="libraryUploadBtn">＋ Upload ebook (PDF)</button>
-    <input type="file" id="libraryFileInput" accept="application/pdf" style="display:none;">
     <div class="library-upload-status" id="libraryUploadStatus"></div>
     <ul class="library-list" id="libraryList"></ul>
     <div class="source-doc" id="libraryEmptyCard" style="display:none;">
-      <div class="doc-name">📚 No ebooks yet</div>
-      <div class="doc-meta">Upload a PDF above — once you do, it becomes the assistant's primary source, ahead of the handbook below.</div>
+      <div class="doc-name">📚 No ebooks configured</div>
+      <div class="doc-meta">Add books via <code>LIBRARY_BOOKS</code> in the server's environment — see README. Once configured, they become the assistant's primary source, ahead of the handbook below.</div>
     </div>
 
     <div class="panel-title" style="margin-top:18px;">Fallback sources <span class="badge-fallback">Used when Library doesn't cover it</span></div>
@@ -1109,18 +1093,13 @@ async function loadSources(){
 }
 
 /* ---------------------------------------------------------
-   LIBRARY (primary knowledge source — uploaded ebooks)
+   LIBRARY (primary knowledge source — configured via LIBRARY_BOOKS
+   on the server; read-only here, since a free-tier host has no durable
+   place to persist an in-app upload)
 --------------------------------------------------------- */
-const libraryUploadBtn = document.getElementById('libraryUploadBtn');
-const libraryFileInput = document.getElementById('libraryFileInput');
 const libraryUploadStatus = document.getElementById('libraryUploadStatus');
 const libraryList = document.getElementById('libraryList');
 const libraryEmptyCard = document.getElementById('libraryEmptyCard');
-
-function formatBytesDate(iso){
-  try{ return new Date(iso).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' }); }
-  catch{ return ''; }
-}
 
 async function loadLibrary(){
   try{
@@ -1131,77 +1110,30 @@ async function loadLibrary(){
     libraryList.innerHTML = '';
     libraryEmptyCard.style.display = books.length ? 'none' : 'block';
 
+    if(data.error){
+      libraryUploadStatus.textContent = `Library config error: ${data.error}`;
+      libraryUploadStatus.className = 'library-upload-status error';
+    } else if(data.configuredCount && data.configuredCount > books.length){
+      libraryUploadStatus.textContent = `${books.length} of ${data.configuredCount} configured book(s) loaded — check server logs for the rest.`;
+      libraryUploadStatus.className = 'library-upload-status error';
+    } else {
+      libraryUploadStatus.textContent = '';
+    }
+
     books.forEach(b => {
       const li = document.createElement('li');
       li.className = 'library-item';
       li.innerHTML = `
         <div class="li-info">
           <div class="li-title">📚 ${escapeHtml(b.title)}</div>
-          <div class="li-meta">${b.pageCount} pages · added ${formatBytesDate(b.uploadedAt)}</div>
-        </div>
-        <button class="li-delete" aria-label="Remove ebook" title="Remove ebook">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-        </button>`;
-      li.querySelector('.li-delete').addEventListener('click', () => deleteLibraryBook(b.id, b.title));
+          <div class="li-meta">${b.pageCount} pages</div>
+        </div>`;
       libraryList.appendChild(li);
     });
   }catch(err){
     // Non-critical — Library panel just stays empty if the server isn't reachable yet.
   }
 }
-
-async function deleteLibraryBook(id, title){
-  if(!confirm(`Remove "${title}" from the library? This can't be undone.`)) return;
-  try{
-    const res = await fetch(`/api/library/${id}`, { method: 'DELETE' });
-    if(!res.ok){
-      const data = await res.json().catch(() => ({}));
-      alert(data.error || 'Could not remove this ebook.');
-      return;
-    }
-    loadLibrary();
-  }catch(err){
-    alert(`Connection error: ${err.message}`);
-  }
-}
-
-libraryUploadBtn.addEventListener('click', () => libraryFileInput.click());
-
-libraryFileInput.addEventListener('change', async () => {
-  const file = libraryFileInput.files[0];
-  libraryFileInput.value = '';
-  if(!file) return;
-
-  if(file.type !== 'application/pdf'){
-    libraryUploadStatus.textContent = 'Only PDF files are supported.';
-    libraryUploadStatus.className = 'library-upload-status error';
-    return;
-  }
-
-  libraryUploadBtn.disabled = true;
-  libraryUploadStatus.textContent = `Uploading & parsing "${file.name}"…`;
-  libraryUploadStatus.className = 'library-upload-status';
-
-  try{
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch('/api/library/upload', { method: 'POST', body: formData });
-    const data = await res.json();
-
-    if(!res.ok){
-      libraryUploadStatus.textContent = data.error || 'Upload failed.';
-      libraryUploadStatus.className = 'library-upload-status error';
-    } else {
-      libraryUploadStatus.textContent = `Added "${data.book.title}" · ${data.book.pageCount} pages.`;
-      libraryUploadStatus.className = 'library-upload-status ok';
-      loadLibrary();
-    }
-  }catch(err){
-    libraryUploadStatus.textContent = `Connection error: ${err.message}`;
-    libraryUploadStatus.className = 'library-upload-status error';
-  }
-  libraryUploadBtn.disabled = false;
-});
 
 async function checkHealth(){
   try{

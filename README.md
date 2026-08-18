@@ -11,6 +11,30 @@ Three panels, like NotebookLM, plus a calendar:
   - **Notebook** — save any chat reply with one click, or write your own notes. Everything persists on the server.
 - **Calendar** (opens from the top bar, on any screen size) — a month view where students can add tasks to specific days, check them off, and delete them. Task counts show as dots on each day; completion feeds the Dashboard's "Tasks" ring.
 
+## Library — the assistant's primary knowledge source
+
+The Library is a set of your own PDF ebooks that the assistant is grounded in **first**, ahead of the built-in handbook (`knowledge.js`), which now acts as a fallback for anything the Library doesn't cover. It's configured via one env var and, like the Personal Reference PDF above, works on free hosting tiers because nothing is written to disk — every server start fetches the configured PDFs fresh from Google Drive into memory.
+
+### Setup
+
+1. Upload each ebook to Google Drive and set its sharing to **"Anyone with the link" → Viewer** (same caveat as the Reference PDF above: this makes the file fetchable by an unauthenticated request, not indexed/searchable by Google, but accessible to anyone who has the exact link).
+2. In `.env`, add `LIBRARY_BOOKS` as a JSON array of `{ "title": ..., "driveUrl": ... }` objects:
+   ```
+   LIBRARY_BOOKS=[{"title":"Advantage PTE Academic","driveUrl":"https://drive.google.com/file/d/YOUR_FILE_ID/view?usp=sharing"},{"title":"Speaking Drills Vol. 2","driveUrl":"https://drive.google.com/file/d/ANOTHER_FILE_ID/view"}]
+   ```
+   (Bare file IDs work too, same as `REFERENCE_PDF_DRIVE_URL`.)
+3. Restart the server (or redeploy, on a host like Render).
+
+### Adding, removing, or updating a book
+
+Edit the `LIBRARY_BOOKS` value in your host's environment variable settings and restart/redeploy. **There's no in-app upload or delete button** — on a free-tier host with an ephemeral filesystem, nothing written by the running app would survive the next restart anyway, so the env var is the one durable place this lives.
+
+### How it works
+
+- On chat, flashcard generation, and quiz generation, the server does a keyword search across every configured book's parsed text and pulls back a handful of the most relevant excerpts — **capped at ~3,500–4,000 characters total per request**, never the whole library — before falling back to the handbook for anything not covered. This keeps API cost and latency flat regardless of how many books are configured.
+- The Sources panel lists whatever's currently loaded (title + page count), read-only. If a book fails to load (bad link, sharing not set correctly), it's skipped and logged rather than breaking the app — check the server logs (`Library: ...`) if a configured book isn't showing up.
+- Chat replies show a citation chip naming the book and page whenever the Library contributed to that answer.
+
 ## Optional: your own personal reference material
 
 You can point the app at a PDF you personally own (e.g. a practice-test book) for extra context, **without ever copying that file into this project**. There are two ways to point at it — use whichever fits your hosting situation.

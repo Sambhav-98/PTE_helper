@@ -3,7 +3,6 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const multer = require('multer');
 const { SOURCES } = require('./knowledge');
 const { ROADMAP } = require('./roadmap');
 const storage = require('./storage');
@@ -16,15 +15,6 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const REFERENCE_PDF_PATH = process.env.REFERENCE_PDF_PATH;
 const REFERENCE_PDF_DRIVE_URL = process.env.REFERENCE_PDF_DRIVE_URL;
-
-// Library uploads are held in memory just long enough to parse + save to
-// disk (library.addBook does the writing) — never written anywhere by
-// multer itself. 50MB covers a large scanned-text ebook comfortably.
-const libraryUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 150 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => cb(null, file.mimetype === 'application/pdf')
-});
 
 // Holds the parsed reference index in memory once loaded. Stays empty if
 // nothing is configured, or if loading fails — the app works fine either
@@ -222,38 +212,17 @@ app.get('/api/reference-status', (req, res) => {
   res.json({ available: referenceReady, pages: referencePageCount, source: referenceSource });
 });
 
-// ---- Library (uploaded ebooks — the primary knowledge source) ----------
+// ---- Library (Google-Drive-backed ebooks — the primary knowledge source) ----
+// Configured via LIBRARY_BOOKS (see README) — read-only from the app's
+// perspective; there's no in-app upload/delete since nothing on a free-tier
+// host would durably persist that kind of runtime change.
 
 app.get('/api/library', (req, res) => {
-  res.json({ books: library.listBooks() });
-});
-
-app.post('/api/library/upload', (req, res) => {
-  libraryUpload.single('file')(req, res, async (err) => {
-    if (err) {
-      const message = err.code === 'LIMIT_FILE_SIZE' ? 'File is too large (50MB max).' : err.message;
-      return res.status(400).json({ error: message });
-    }
-    if (!req.file) {
-      return res.status(400).json({ error: 'No PDF file was received. Only application/pdf is accepted.' });
-    }
-    try {
-      const book = await library.addBook(req.file.buffer, req.file.originalname);
-      res.json({ book });
-    } catch (e) {
-      res.status(400).json({ error: `Could not read this PDF: ${e.message}` });
-    }
+  res.json({
+    books: library.listBooks(),
+    configuredCount: library.configuredCount(),
+    error: library.getLastInitError()
   });
-});
-
-app.delete('/api/library/:id', async (req, res) => {
-  try {
-    const removed = await library.removeBook(req.params.id);
-    if (!removed) return res.status(404).json({ error: 'Ebook not found.' });
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: `Could not remove ebook: ${err.message}` });
-  }
 });
 
 app.post('/api/chat', async (req, res) => {

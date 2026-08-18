@@ -1,136 +1,85 @@
-const fs = require('fs/promises');
-const path = require('path');
-const crypto = require('crypto');
 const reference = require('./reference');
 
-// Uploaded PDFs live on disk under data/library-files (same "data/" dir the
-// app already gitignores and uses for notes/tasks/etc). Only a manifest
-// (id, title, filename, page count, upload date) is persisted separately —
-// the actual searchable chunk index is rebuilt into memory from the PDFs
-// on every server start, exactly like reference.js already does for the
-// single personal-reference PDF.
-const DATA_DIR = path.join(__dirname, 'data');
-const FILES_DIR = path.join(DATA_DIR, 'library-files');
-const MANIFEST_FILE = path.join(DATA_DIR, 'library.json');
+// The Library is configured entirely via the LIBRARY_BOOKS env var — a JSON
+// array of { title, driveUrl }. Nothing is ever written to local disk, so
+// this works on hosting tiers with an ephemeral filesystem (e.g. Render's
+// free plan): every server start re-fetches each PDF from Google Drive into
+// memory and rebuilds the search index, exactly like reference.js already
+// does for the single Personal Reference PDF.
+//
+// To add/remove a book: edit LIBRARY_BOOKS in your host's env var settings
+// and redeploy/restart. There is no in-app upload — nothing else has a
+// durable place to persist a runtime change on a free-tier host.
 
-// In-memory only: [{ id, title, pageCount, uploadedAt, chunks: [{page, text, bookId, bookTitle}] }]
+// In-memory only: [{ id, title, pageCount, chunks: [{page, text, bookId, bookTitle}] }]
 let books = [];
+let lastInitError = null;
 
-async function ensureDirs() {
-  await fs.mkdir(FILES_DIR, { recursive: true });
-}
-
-async function readManifest() {
-  await ensureDirs();
+function parseConfig() {
+  const raw = process.env.LIBRARY_BOOKS;
+  if (!raw || !raw.trim()) return [];
+  let entries;
   try {
-    const raw = await fs.readFile(MANIFEST_FILE, 'utf8');
-    return JSON.parse(raw);
-  } catch {
-    return [];
+    entries = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`LIBRARY_BOOKS is not valid JSON — ${err.message}`);
   }
-}
-
-async function writeManifest(entries) {
-  await ensureDirs();
-  await fs.writeFile(MANIFEST_FILE, JSON.stringify(entries, null, 2));
-}
-
-function titleFromFilename(originalName) {
-  return String(originalName || 'Untitled ebook')
-    .replace(/\.pdf$/i, '')
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim() || 'Untitled ebook';
+  if (!Array.isArray(entries)) throw new Error('LIBRARY_BOOKS must be a JSON array.');
+  return entries
+    .map((e, i) => ({ title: (e && e.title && String(e.title).trim()) || `Untitled ebook ${i + 1}`, driveUrl: e && e.driveUrl }))
+    .filter(e => e.driveUrl);
 }
 
 /**
- * Rebuilds the in-memory chunk index from whatever's on disk. Called once
- * at server startup. Any manifest entry whose file is missing (e.g. the
- * disk was wiped on a free hosting tier without a persistent volume) is
- * silently dropped rather than crashing the app.
+ * Fetches every configured book from Google Drive and rebuilds the
+ * in-memory chunk index. Called once at server startup. A single book
+ * failing to load (bad link, sharing not set to "Anyone with the link",
+ * Drive's download-flow page changing) is logged and skipped rather than
+ * taking down the whole app.
  */
 async function init() {
-  const manifest = await readManifest();
-  const survivors = [];
   books = [];
+  lastInitError = null;
 
-  for (const entry of manifest) {
+  let configured;
+  try {
+    configured = parseConfig();
+  } catch (err) {
+    lastInitError = err.message;
+    console.log(`Library: ${err.message}`);
+    return;
+  }
+
+  if (!configured.length) {
+    console.log('Library: no books configured (LIBRARY_BOOKS is empty or unset).');
+    return;
+  }
+
+  for (const { title, driveUrl } of configured) {
     try {
-      const filePath = path.join(FILES_DIR, entry.filename);
-      const buffer = await fs.readFile(filePath);
+      const fileId = reference.extractDriveFileId(driveUrl);
+      if (!fileId) throw new Error('could not extract a Google Drive file ID from the link.');
+      const buffer = await reference.fetchGoogleDriveFile(fileId);
       const pages = await reference.parsePdfBuffer(buffer);
       const rawChunks = reference.buildChunks(pages);
-      const chunks = rawChunks.map(c => ({ ...c, bookId: entry.id, bookTitle: entry.title }));
-      books.push({
-        id: entry.id,
-        title: entry.title,
-        pageCount: pages.length,
-        uploadedAt: entry.uploadedAt,
-        chunks
-      });
-      survivors.push(entry);
+      const bookId = fileId;
+      const chunks = rawChunks.map(c => ({ ...c, bookId, bookTitle: title }));
+      books.push({ id: bookId, title, pageCount: pages.length, chunks });
+      console.log(`Library: loaded "${title}" — ${pages.length} pages.`);
     } catch (err) {
-      console.log(`Library: skipping "${entry.title}" — ${err.message}`);
+      console.log(`Library: failed to load "${title}" — ${err.message}`);
     }
   }
 
-  if (survivors.length !== manifest.length) await writeManifest(survivors);
-  console.log(`Library: ready — ${books.length} ebook(s), ${totalChunks()} chunks indexed in memory.`);
+  console.log(`Library: ready — ${books.length}/${configured.length} book(s) loaded, ${totalChunks()} chunks indexed in memory.`);
 }
 
 function totalChunks() {
   return books.reduce((sum, b) => sum + b.chunks.length, 0);
 }
 
-/** Parses and stores a newly uploaded PDF. Returns its public summary. */
-async function addBook(buffer, originalName) {
-  await ensureDirs();
-  const id = crypto.randomUUID();
-  const title = titleFromFilename(originalName);
-  const filename = `${id}.pdf`;
-
-  // Parse first — if the PDF is corrupt/unreadable, fail before writing
-  // anything to disk or touching the manifest.
-  const pages = await reference.parsePdfBuffer(buffer);
-  const rawChunks = reference.buildChunks(pages);
-  if (!rawChunks.length) {
-    throw new Error('No extractable text found in this PDF (it may be scanned images without OCR).');
-  }
-
-  await fs.writeFile(path.join(FILES_DIR, filename), buffer);
-
-  const entry = { id, title, filename, uploadedAt: new Date().toISOString() };
-  const manifest = await readManifest();
-  manifest.push(entry);
-  await writeManifest(manifest);
-
-  const chunks = rawChunks.map(c => ({ ...c, bookId: id, bookTitle: title }));
-  const book = { id, title, pageCount: pages.length, uploadedAt: entry.uploadedAt, chunks };
-  books.push(book);
-
-  return { id, title, pageCount: pages.length, uploadedAt: entry.uploadedAt };
-}
-
-async function removeBook(id) {
-  const manifest = await readManifest();
-  const entry = manifest.find(e => e.id === id);
-  if (!entry) return false;
-
-  try {
-    await fs.unlink(path.join(FILES_DIR, entry.filename));
-  } catch {
-    // File already gone — fine, still remove it from the manifest/index below.
-  }
-
-  await writeManifest(manifest.filter(e => e.id !== id));
-  books = books.filter(b => b.id !== id);
-  return true;
-}
-
 function listBooks() {
-  return books
-    .map(b => ({ id: b.id, title: b.title, pageCount: b.pageCount, uploadedAt: b.uploadedAt }))
-    .sort((a, b) => (a.uploadedAt < b.uploadedAt ? 1 : -1));
+  return books.map(b => ({ id: b.id, title: b.title, pageCount: b.pageCount }));
 }
 
 function isEmpty() {
@@ -141,14 +90,20 @@ function allChunks() {
   return books.flatMap(b => b.chunks);
 }
 
+function configuredCount() {
+  try {
+    return parseConfig().length;
+  } catch {
+    return 0;
+  }
+}
+
 /**
  * Keyword search across every book's chunks at once, reusing the same
  * search that already powers the personal-reference feature. This is the
- * "chunking" layer the app relies on to stay cheap: no matter how many
- * ebooks are in the library, each chat/generate call only ever sends a
- * handful of matched, capped excerpts to the model — never the whole
- * library — which keeps API traffic and token cost flat as the library
- * grows instead of scaling with its size.
+ * "chunking" layer that keeps the app cheap: no matter how many ebooks are
+ * configured, each chat/generate call only ever sends a handful of
+ * matched, capped excerpts to the model — never the whole library.
  */
 function search(query, topK = 5) {
   return reference.searchChunks(query, allChunks(), topK);
@@ -171,10 +126,10 @@ function buildExcerptBlock(matches, maxChars = 3500) {
 
 module.exports = {
   init,
-  addBook,
-  removeBook,
   listBooks,
   isEmpty,
   search,
-  buildExcerptBlock
+  buildExcerptBlock,
+  configuredCount,
+  getLastInitError: () => lastInitError
 };
