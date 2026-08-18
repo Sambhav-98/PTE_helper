@@ -8,7 +8,7 @@ const { SOURCES } = require('./knowledge');
 const { ROADMAP } = require('./roadmap');
 const storage = require('./storage');
 const reference = require('./reference');
-const uploads = require('./uploads');
+const library = require('./library');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,13 +16,14 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const REFERENCE_PDF_PATH = process.env.REFERENCE_PDF_PATH;
 const REFERENCE_PDF_DRIVE_URL = process.env.REFERENCE_PDF_DRIVE_URL;
-const MAX_UPLOAD_TEXT_CHARS = 400000; // ~ a large personal document's worth of text, keeps storage sane
 
-// Files are held in memory only during the upload request — never written
-// to disk as raw files, only as extracted text (see /api/uploads below).
-const uploadMiddleware = multer({
+// Library uploads are held in memory just long enough to parse + save to
+// disk (library.addBook does the writing) — never written anywhere by
+// multer itself. 50MB covers a large scanned-text ebook comfortably.
+const libraryUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024 } // 15MB
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, file.mimetype === 'application/pdf')
 });
 
 // Holds the parsed reference index in memory once loaded. Stays empty if
@@ -91,18 +92,37 @@ async function initReference() {
   }
 }
 
-function buildSystemPrompt() {
+/**
+ * Builds the chat system prompt. The uploaded Library (see library.js) is
+ * the primary knowledge source whenever it has anything relevant to the
+ * current question — libraryExcerpt is a handful of matched, capped chunks,
+ * never the whole library, which is what keeps this cheap regardless of how
+ * many ebooks get uploaded. The built-in handbook (knowledge.js) is always
+ * included too, but framed as a fallback/supplement so the model reaches
+ * for it only when the library doesn't cover something.
+ */
+function buildSystemPrompt(libraryExcerpt) {
   const kb = SOURCES.map(s => `## ${s.title}\n${s.content.trim()}`).join('\n\n');
-  return `You are the study assistant embedded in "PTE Prep Hub," built on a single source document: the PTE Academic Handbook by Ultimate Language Academy. Answer the user's questions using ONLY the handbook content provided below.
+  const hasLibrary = Boolean(libraryExcerpt);
+
+  const librarySection = hasLibrary
+    ? `LIBRARY MATERIAL (primary source — excerpts from your institution's own uploaded ebooks, matched to the student's question):\n${libraryExcerpt}\n\n`
+    : '';
+  const handbookLabel = hasLibrary
+    ? 'SUPPLEMENTARY HANDBOOK CONTENT (fall back to this only for anything the Library material above doesn\'t cover):'
+    : 'HANDBOOK CONTENT:';
+
+  return `You are the study assistant embedded in "PTE Prep Hub." Answer the user's questions using ONLY the material provided below${hasLibrary ? ', prioritizing the Library material as the primary source' : ''}.
 
 Rules:
-- Ground every answer in the handbook content below. Do not invent facts, numbers, or templates that aren't in it.
-- If the answer isn't covered in the handbook, say so plainly and suggest the closest related section instead of guessing.
+- Ground every answer in the material below. Do not invent facts, numbers, or templates that aren't in it.
+- If the answer isn't covered below, say so plainly and suggest the closest related topic instead of guessing.
 - Be concise, practical, and exam-focused — this is for a student actively preparing for the PTE Academic test.
 - When helpful, format with short paragraphs or bullet points (use "- " for bullets, "**text**" for bold). Don't use headers.
-- When you draw from a specific section, you can mention its name naturally (e.g. "As covered in Read Aloud...").
+- When you draw from a specific handbook section, you can mention its name naturally (e.g. "As covered in Read Aloud...").
+- When you draw from Library material, paraphrase it in your own words rather than quoting it at length.
 
-HANDBOOK CONTENT:
+${librarySection}${handbookLabel}
 ${kb}`;
 }
 
@@ -120,72 +140,35 @@ app.get('/api/health', (req, res) => {
  * material stays just as grounded and just as light on any personal
  * reference content.
  */
-/**
- * Pulls the most relevant slice of a set of chunks up to a character cap.
- * If a topic is given, ranks chunks by keyword relevance to it first
- * (useful for narrowing a large uploaded document); otherwise just takes
- * chunks in their original order. Reuses reference.js's generic search,
- * which only cares that each item has a `.text`.
- */
-function sliceChunksForContext(chunks, topic, maxChars) {
-  const withIndex = chunks.map((c, i) => ({ text: c.text, chunkIndex: i }));
-  let ordered = withIndex;
-  if (topic && topic.trim()) {
-    const ranked = reference.searchChunks(topic, withIndex, withIndex.length);
-    if (ranked.length) ordered = ranked;
-  }
-
-  let used = 0;
-  const parts = [];
-  for (const c of ordered) {
-    if (used >= maxChars) break;
-    const remaining = maxChars - used;
-    let text = c.text;
-    if (text.length > remaining) text = text.slice(0, remaining).trim() + '…';
-    parts.push(text);
-    used += text.length;
-  }
-  return parts.join('\n\n');
-}
-
-/**
- * Resolves grounding material for flashcard/quiz generation from one of
- * three source types — a handbook section, an uploaded document (with an
- * optional topic to narrow a large file), or a free-typed topic (which
- * falls back to the whole handbook) — plus optional short reference
- * excerpts, same as chat. Returns { error } if an uploadId was given but
- * no longer exists (e.g. deleted after being selected in the dropdown).
- */
-async function resolveStudyContext({ sectionTitle, uploadId, topic, useReference }) {
+function buildStudyContext(sectionTitle, topic, useReference) {
+  const label = (topic && topic.trim()) || sectionTitle || '';
   let contextText = '';
-  let label = (topic && topic.trim()) || sectionTitle || '';
 
-  if (uploadId) {
-    const allUploads = await storage.getUploads();
-    const doc = allUploads.find(d => d.id === uploadId);
-    if (!doc) {
-      return { error: 'That uploaded source could not be found — it may have been removed. Refresh and try again.' };
-    }
-    const slice = sliceChunksForContext(doc.chunks, topic, 12000);
-    contextText = `## ${doc.name}\n${slice}`;
-    label = (topic && topic.trim()) ? `${doc.name} — ${topic.trim()}` : doc.name;
-  } else if (sectionTitle) {
+  // Library first: search the uploaded ebooks for chunks matching the
+  // chosen topic/section, capped just like chat — not the whole library.
+  if (!library.isEmpty() && label) {
+    const libMatches = library.search(label, 4);
+    if (libMatches.length) contextText = library.buildExcerptBlock(libMatches, 3500);
+  }
+
+  // Handbook fallback — used whenever the library is empty or has nothing
+  // relevant to this particular topic.
+  if (!contextText && sectionTitle) {
     const section = SOURCES.find(s => s.title === sectionTitle);
     if (section) contextText = `## ${section.title}\n${section.content.trim()}`;
   }
-
   if (!contextText) {
     contextText = SOURCES.map(s => `## ${s.title}\n${s.content.trim()}`).join('\n\n');
   }
 
   let refBlock = '';
-  const query = (topic || sectionTitle || label || '').trim();
+  const query = (topic || sectionTitle || '').trim();
   if (useReference && referenceReady && referenceChunks.length && query) {
     const matches = reference.searchChunks(query, referenceChunks, 2);
     if (matches.length) refBlock = reference.buildExcerptBlock(matches, 700);
   }
 
-  return { contextText, refBlock, label };
+  return { contextText, refBlock };
 }
 
 /**
@@ -206,7 +189,7 @@ async function generateStructuredContent(systemPrompt, userPrompt) {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 0.4
+      temperature: 1.5
     })
   });
 
@@ -239,117 +222,39 @@ app.get('/api/reference-status', (req, res) => {
   res.json({ available: referenceReady, pages: referencePageCount, source: referenceSource });
 });
 
-// ---- Uploaded document sources (NotebookLM-style "add a source") -------
+// ---- Library (uploaded ebooks — the primary knowledge source) ----------
 
-function uploadMetadata(doc) {
-  return {
-    id: doc.id,
-    name: doc.name,
-    type: doc.type,
-    chunkCount: doc.chunkCount,
-    textLength: doc.textLength,
-    truncated: doc.truncated,
-    createdAt: doc.createdAt
-  };
-}
+app.get('/api/library', (req, res) => {
+  res.json({ books: library.listBooks() });
+});
 
-app.post('/api/uploads', (req, res) => {
-  uploadMiddleware.single('file')(req, res, async (err) => {
+app.post('/api/library/upload', (req, res) => {
+  libraryUpload.single('file')(req, res, async (err) => {
     if (err) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: 'That file is too large — the limit is 15MB.' });
-      }
-      return res.status(400).json({ error: `Upload failed: ${err.message}` });
+      const message = err.code === 'LIMIT_FILE_SIZE' ? 'File is too large (50MB max).' : err.message;
+      return res.status(400).json({ error: message });
     }
     if (!req.file) {
-      return res.status(400).json({ error: 'No file was received.' });
+      return res.status(400).json({ error: 'No PDF file was received. Only application/pdf is accepted.' });
     }
-
-    const ext = path.extname(req.file.originalname).toLowerCase();
-    if (!uploads.SUPPORTED_EXTENSIONS.includes(ext)) {
-      return res.status(400).json({
-        error: `Unsupported file type "${ext || 'unknown'}". Supported: PDF, .txt, .md.`
-      });
-    }
-
     try {
-      const rawText = await uploads.extractText(req.file.buffer, ext);
-      if (!rawText || !rawText.trim()) {
-        return res.status(400).json({ error: 'Could not find any text in that file.' });
-      }
-
-      const truncated = rawText.length > MAX_UPLOAD_TEXT_CHARS;
-      const text = truncated ? rawText.slice(0, MAX_UPLOAD_TEXT_CHARS) : rawText;
-      const chunks = uploads.chunkText(text);
-
-      const all = await storage.getUploads();
-      const doc = {
-        id: crypto.randomUUID(),
-        name: req.file.originalname,
-        type: ext.replace('.', ''),
-        chunkCount: chunks.length,
-        textLength: text.length,
-        truncated,
-        chunks,
-        createdAt: new Date().toISOString()
-      };
-      all.unshift(doc);
-      await storage.saveUploads(all);
-
-      res.json({ source: uploadMetadata(doc) });
-    } catch (uploadErr) {
-      res.status(500).json({ error: `Could not process file: ${uploadErr.message}` });
+      const book = await library.addBook(req.file.buffer, req.file.originalname);
+      res.json({ book });
+    } catch (e) {
+      res.status(400).json({ error: `Could not read this PDF: ${e.message}` });
     }
   });
 });
 
-app.get('/api/uploads', async (req, res) => {
+app.delete('/api/library/:id', async (req, res) => {
   try {
-    const all = await storage.getUploads();
-    res.json({ sources: all.map(uploadMetadata) });
-  } catch (err) {
-    res.status(500).json({ error: `Could not load uploaded sources: ${err.message}` });
-  }
-});
-
-app.delete('/api/uploads/:id', async (req, res) => {
-  try {
-    const all = await storage.getUploads();
-    const filtered = all.filter(d => d.id !== req.params.id);
-    await storage.saveUploads(filtered);
+    const removed = await library.removeBook(req.params.id);
+    if (!removed) return res.status(404).json({ error: 'Ebook not found.' });
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: `Could not delete source: ${err.message}` });
+    res.status(500).json({ error: `Could not remove ebook: ${err.message}` });
   }
 });
-
-/**
- * Searches every uploaded document for the single best-matching chunk,
- * then returns the top few documents by match quality — never more than
- * one short excerpt per document, and never more than a few documents,
- * regardless of how many are uploaded. Reuses reference.js's generic
- * keyword-overlap search (it only cares that each item has a `.text`).
- */
-async function searchUploadedSources(query, maxDocs = 3, perDocCap = 400) {
-  const allDocs = await storage.getUploads();
-  if (!allDocs.length || !query) return [];
-
-  const results = [];
-  for (const doc of allDocs) {
-    const chunksWithIndex = doc.chunks.map((c, i) => ({ text: c.text, chunkIndex: i }));
-    const matches = reference.searchChunks(query, chunksWithIndex, 1);
-    if (matches.length) {
-      results.push({ name: doc.name, match: matches[0] });
-    }
-  }
-
-  results.sort((a, b) => b.match.score - a.match.score);
-  return results.slice(0, maxDocs).map(r => {
-    let text = r.match.text;
-    if (text.length > perDocCap) text = text.slice(0, perDocCap).trim() + '…';
-    return { name: r.name, excerpt: `[${r.name}, part ${r.match.chunkIndex + 1}] ${text}` };
-  });
-}
 
 app.post('/api/chat', async (req, res) => {
   if (!OPENAI_API_KEY) {
@@ -363,38 +268,37 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'Request body must include a "messages" array.' });
   }
 
-  let systemContent = buildSystemPrompt();
-  let referencePagesUsed = [];
-  let uploadedSourcesUsed = [];
   const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+
+  // Library first: search across every uploaded ebook for chunks relevant
+  // to the student's latest message. Only the matched, capped excerpts are
+  // sent — never the full library — so cost/latency stay flat as more
+  // ebooks get uploaded.
+  let libraryExcerpt = '';
+  let libraryItemsUsed = [];
+  if (!library.isEmpty() && lastUserMessage && lastUserMessage.content) {
+    const libMatches = library.search(lastUserMessage.content, 5);
+    if (libMatches.length) {
+      libraryExcerpt = library.buildExcerptBlock(libMatches, 4000);
+      libraryItemsUsed = libMatches.map(m => ({ book: m.bookTitle, page: m.page }));
+    }
+  }
+
+  let systemContent = buildSystemPrompt(libraryExcerpt);
+  let referencePagesUsed = [];
 
   // If a personal reference PDF is loaded, pull a couple of short, capped
   // excerpts relevant to the student's latest message — never the whole
   // document. This keeps the reference material as light supporting
   // context rather than something that gets bulk-reproduced.
-  if (referenceReady && referenceChunks.length && lastUserMessage && lastUserMessage.content) {
-    const matches = reference.searchChunks(lastUserMessage.content, referenceChunks, 3);
-    if (matches.length) {
-      referencePagesUsed = matches.map(m => m.page);
-      const excerpt = reference.buildExcerptBlock(matches, 900);
-      systemContent += `\n\nADDITIONAL PERSONAL REFERENCE MATERIAL (from a practice-test book the student personally owns — separate from the handbook above). These are short, capped excerpts included only for extra context on this specific question:\n\n${excerpt}\n\nWhen drawing on this material: paraphrase it in your own words rather than quoting it at length, refer to it generically as "your reference material" (not by title or publisher), and never reproduce more of it than what's shown above.`;
-    }
-  }
-
-  // Documents the student uploaded themselves through the Sources panel —
-  // same on-demand, capped-excerpt approach as the reference material
-  // above, just per-document instead of per-page.
-  if (lastUserMessage && lastUserMessage.content) {
-    try {
-      const uploadBlocks = await searchUploadedSources(lastUserMessage.content);
-      if (uploadBlocks.length) {
-        uploadedSourcesUsed = uploadBlocks.map(b => b.name);
-        const combined = uploadBlocks.map(b => b.excerpt).join('\n\n');
-        systemContent += `\n\nADDITIONAL UPLOADED SOURCES (documents the student added themselves — treat these as trustworthy source material, same as the handbook). Short, capped excerpts relevant to this question:\n\n${combined}`;
+  if (referenceReady && referenceChunks.length) {
+    if (lastUserMessage && lastUserMessage.content) {
+      const matches = reference.searchChunks(lastUserMessage.content, referenceChunks, 3);
+      if (matches.length) {
+        referencePagesUsed = matches.map(m => m.page);
+        const excerpt = reference.buildExcerptBlock(matches, 950);
+        systemContent += `\n\nADDITIONAL PERSONAL REFERENCE MATERIAL (from a practice-test book the student personally owns — separate from the handbook above). These are short, capped excerpts included only for extra context on this specific question:\n\n${excerpt}\n\nWhen drawing on this material: paraphrase it in your own words rather than quoting it at length, refer to it generically as "your reference material" (not by title or publisher), and never reproduce more of it than what's shown above.`;
       }
-    } catch (err) {
-      // Uploaded sources are optional context — a failure here shouldn't
-      // block the chat response.
     }
   }
 
@@ -423,7 +327,7 @@ app.post('/api/chat', async (req, res) => {
     res.json({
       reply,
       reference: referencePagesUsed.length ? { pages: referencePagesUsed } : null,
-      uploadedSources: uploadedSourcesUsed.length ? uploadedSourcesUsed : null
+      library: libraryItemsUsed.length ? { items: libraryItemsUsed } : null
     });
   } catch (err) {
     res.status(500).json({ error: `Server error contacting OpenAI: ${err.message}` });
@@ -436,16 +340,13 @@ app.post('/api/flashcards/generate', async (req, res) => {
   if (!OPENAI_API_KEY) {
     return res.status(500).json({ error: 'The server has no OPENAI_API_KEY configured. Add one to your .env file and restart the server.' });
   }
-  const { sectionTitle, uploadId, topic, useReference } = req.body || {};
-  if (!sectionTitle && !uploadId && !topic) {
-    return res.status(400).json({ error: 'Choose a section, an uploaded source, or enter a topic first.' });
+  const { sectionTitle, topic, useReference } = req.body || {};
+  if (!sectionTitle && !topic) {
+    return res.status(400).json({ error: 'Choose a section or enter a topic first.' });
   }
 
-  const resolved = await resolveStudyContext({ sectionTitle, uploadId, topic, useReference });
-  if (resolved.error) {
-    return res.status(400).json({ error: resolved.error });
-  }
-  const { contextText, refBlock, label } = resolved;
+  const label = (topic && topic.trim()) || sectionTitle;
+  const { contextText, refBlock } = buildStudyContext(sectionTitle, topic, useReference);
 
   const systemPrompt = `You create study flashcards for a PTE Academic student, grounded ONLY in the material below — never invent facts, numbers, or templates that aren't in it. Respond with ONLY a raw JSON array, no markdown code fences, no commentary before or after, in exactly this shape:
 [{"front": "short question or term (under 15 words)", "back": "concise direct answer (under 35 words)"}]
@@ -512,17 +413,14 @@ app.post('/api/quiz/generate', async (req, res) => {
   if (!OPENAI_API_KEY) {
     return res.status(500).json({ error: 'The server has no OPENAI_API_KEY configured. Add one to your .env file and restart the server.' });
   }
-  const { sectionTitle, uploadId, topic, useReference, count } = req.body || {};
-  if (!sectionTitle && !uploadId && !topic) {
-    return res.status(400).json({ error: 'Choose a section, an uploaded source, or enter a topic first.' });
+  const { sectionTitle, topic, useReference, count } = req.body || {};
+  if (!sectionTitle && !topic) {
+    return res.status(400).json({ error: 'Choose a section or enter a topic first.' });
   }
   const n = [5, 8, 10].includes(Number(count)) ? Number(count) : 5;
 
-  const resolved = await resolveStudyContext({ sectionTitle, uploadId, topic, useReference });
-  if (resolved.error) {
-    return res.status(400).json({ error: resolved.error });
-  }
-  const { contextText, refBlock, label } = resolved;
+  const label = (topic && topic.trim()) || sectionTitle;
+  const { contextText, refBlock } = buildStudyContext(sectionTitle, topic, useReference);
 
   const systemPrompt = `You create a multiple-choice quiz for a PTE Academic student, grounded ONLY in the material below — never invent facts, numbers, or templates that aren't in it. Respond with ONLY a raw JSON array, no markdown code fences, no commentary before or after, in exactly this shape:
 [{"question": "...", "options": ["...","...","...","..."], "answerIndex": 0, "explanation": "under 25 words"}]
@@ -724,4 +622,5 @@ app.listen(PORT, () => {
   console.log(`PTE Prep Hub running at http://localhost:${PORT}`);
   console.log(OPENAI_API_KEY ? `OpenAI key loaded. Using model: ${MODEL}` : 'WARNING: No OPENAI_API_KEY found in .env');
   initReference();
+  library.init();
 });

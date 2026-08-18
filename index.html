@@ -165,6 +165,50 @@
   .source-doc .doc-meta{
     font-size:11.5px;color:var(--muted);
   }
+  .badge-primary{
+    display:inline-block; margin-left:6px; padding:1px 6px; border-radius:999px;
+    background:var(--accent-teal); color:#fff; font-size:9px; letter-spacing:0.04em;
+    text-transform:uppercase; vertical-align:1px;
+  }
+  .badge-fallback{
+    display:inline-block; margin-left:6px; padding:1px 6px; border-radius:999px;
+    background:var(--line); color:var(--muted); font-size:9px; letter-spacing:0.04em;
+    text-transform:uppercase; vertical-align:1px;
+  }
+  .library-upload-btn{
+    width:100%; margin-bottom:10px; padding:9px 10px;
+    border:1px dashed var(--accent-teal); border-radius:10px;
+    background:none; color:var(--accent-teal); font-family:inherit; font-size:12.5px; font-weight:600;
+    cursor:pointer; transition:background 0.15s;
+  }
+  .library-upload-btn:hover{ background:rgba(47,123,109,0.08); }
+  .library-upload-btn:disabled{ opacity:0.6; cursor:default; }
+  .library-upload-status{ font-size:11.5px; color:var(--muted); margin:-4px 0 10px 2px; min-height:14px; }
+  .library-upload-status.error{ color:var(--accent-red); }
+  .library-upload-status.ok{ color:var(--accent-teal); }
+  .library-list{ list-style:none; margin:0 0 6px; padding:0; }
+  .library-item{
+    display:flex; align-items:center; gap:8px;
+    border:1px solid var(--line); border-radius:10px;
+    padding:9px 10px; margin-bottom:8px; background:var(--paper);
+  }
+  .library-item .li-info{ flex:1; min-width:0; }
+  .library-item .li-title{ font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .library-item .li-meta{ font-size:10.5px; color:var(--muted); }
+  .library-item .li-delete{
+    border:none; background:none; color:var(--muted); cursor:pointer; padding:4px;
+    display:flex; align-items:center; border-radius:6px; flex-shrink:0;
+  }
+  .library-item .li-delete:hover{ color:var(--accent-red); background:rgba(176,67,42,0.08); }
+  .library-item .li-delete svg{ width:14px; height:14px; }
+  .lib-chip{
+    display:inline-flex; align-items:center; gap:5px;
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px;
+    padding:4px 8px; border-radius:999px;
+    background:rgba(47,123,109,0.1); color:var(--accent-teal);
+    margin-right:6px;
+  }
+  .lib-chip svg{ width:12px; height:12px; }
   .source-list{list-style:none;margin:10px 0 0;padding:0;}
   .source-list li{
     font-size:13px;
@@ -403,30 +447,6 @@
   .note-delete:hover{color:var(--accent-red);}
   .note-delete svg{width:13px;height:13px;}
   .note-empty{font-size:12px;color:var(--muted);text-align:center;padding:24px 10px;}
-
-  /* UPLOADED SOURCES */
-  .upload-dropzone{
-    border:1.5px dashed var(--line);border-radius:10px;padding:14px 10px;
-    text-align:center;cursor:pointer;font-size:11.5px;color:var(--muted);
-    transition:border-color .15s ease, background .15s ease, color .15s ease;
-    margin-bottom:8px;line-height:1.5;
-  }
-  .upload-dropzone:hover, .upload-dropzone.dragover{
-    border-color:var(--accent-gold);background:rgba(201,142,30,0.07);color:var(--ink);
-  }
-  .upload-dropzone-sub{font-size:10px;color:var(--muted);margin-top:3px;}
-  .upload-status-msg{font-size:11px;padding:4px 2px 10px;line-height:1.4;}
-  .upload-status-msg.error{color:var(--accent-red);}
-  .upload-status-msg.success{color:var(--accent-teal);}
-  .uploaded-source-item{
-    display:flex;align-items:center;gap:7px;font-size:12.5px;padding:8px 9px;
-    border-radius:8px;border:1px solid var(--line);margin-bottom:6px;background:var(--paper);
-  }
-  .uploaded-source-item .usi-info{flex:1;min-width:0;}
-  .uploaded-source-item .usi-name{
-    font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  }
-  .uploaded-source-item .usi-meta{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
 
   /* DASHBOARD RINGS */
   .rings-row{display:flex;gap:10px;margin-bottom:12px;}
@@ -763,7 +783,17 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
       </button>
     </div>
-    <div class="panel-title">Source</div>
+    <div class="panel-title">Library <span class="badge-primary">Primary</span></div>
+    <button class="library-upload-btn" id="libraryUploadBtn">＋ Upload ebook (PDF)</button>
+    <input type="file" id="libraryFileInput" accept="application/pdf" style="display:none;">
+    <div class="library-upload-status" id="libraryUploadStatus"></div>
+    <ul class="library-list" id="libraryList"></ul>
+    <div class="source-doc" id="libraryEmptyCard" style="display:none;">
+      <div class="doc-name">📚 No ebooks yet</div>
+      <div class="doc-meta">Upload a PDF above — once you do, it becomes the assistant's primary source, ahead of the handbook below.</div>
+    </div>
+
+    <div class="panel-title" style="margin-top:18px;">Fallback sources <span class="badge-fallback">Used when Library doesn't cover it</span></div>
     <div class="source-doc">
       <div class="doc-name">📘 PTE Academic Handbook</div>
       <div class="doc-meta">Ultimate Language Academy · 14 sections</div>
@@ -772,25 +802,15 @@
       <div class="doc-name">📗 Personal Reference</div>
       <div class="doc-meta" id="referenceDocMeta">Checking…</div>
     </div>
-
-    <div class="panel-title" style="margin-top:18px;">My uploads</div>
-    <div class="upload-dropzone" id="uploadDropzone">
-      <input type="file" id="uploadFileInput" accept=".pdf,.txt,.md" style="display:none;">
-      <div>📎 Click or drop a file to add it as a source</div>
-      <div class="upload-dropzone-sub">PDF, .txt, or .md · up to 15MB</div>
-    </div>
-    <div id="uploadStatus"></div>
-    <div id="uploadedSourcesList"></div>
-
-    <div class="panel-title" style="margin-top:18px;">Sections</div>
+    <div class="panel-title" style="margin-top:18px;">Handbook sections</div>
     <ul class="source-list" id="sourceList"></ul>
   </div>
 
   <div class="panel panel-center">
     <div class="chat-scroll" id="chatScroll">
       <div class="hero" id="heroBlock">
-        <h1>Ask the PTE handbook anything.</h1>
-        <p>This is grounded entirely in the uploaded PTE Academic handbook — scoring breakdowns, task strategies, and templates. Save any answer to your Notebook, or open the Roadmap for a step-by-step study plan.</p>
+        <h1>Ask your library anything.</h1>
+        <p>Answers are grounded first in your uploaded Library ebooks, falling back to the built-in PTE Academic handbook for anything not yet in your library. Save any answer to your Notebook, or open the Roadmap for a step-by-step study plan.</p>
         <div class="chip-row" id="chipRow"></div>
       </div>
     </div>
@@ -1082,11 +1102,106 @@ async function loadSources(){
       };
       sourceList.appendChild(li);
     });
-    populatePracticeSourceOptions();
+    populateSectionSelects();
   }catch(err){
     // Sources panel is non-critical; fail silently if the server isn't reachable yet.
   }
 }
+
+/* ---------------------------------------------------------
+   LIBRARY (primary knowledge source — uploaded ebooks)
+--------------------------------------------------------- */
+const libraryUploadBtn = document.getElementById('libraryUploadBtn');
+const libraryFileInput = document.getElementById('libraryFileInput');
+const libraryUploadStatus = document.getElementById('libraryUploadStatus');
+const libraryList = document.getElementById('libraryList');
+const libraryEmptyCard = document.getElementById('libraryEmptyCard');
+
+function formatBytesDate(iso){
+  try{ return new Date(iso).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' }); }
+  catch{ return ''; }
+}
+
+async function loadLibrary(){
+  try{
+    const res = await fetch('/api/library');
+    const data = await res.json();
+    const books = data.books || [];
+
+    libraryList.innerHTML = '';
+    libraryEmptyCard.style.display = books.length ? 'none' : 'block';
+
+    books.forEach(b => {
+      const li = document.createElement('li');
+      li.className = 'library-item';
+      li.innerHTML = `
+        <div class="li-info">
+          <div class="li-title">📚 ${escapeHtml(b.title)}</div>
+          <div class="li-meta">${b.pageCount} pages · added ${formatBytesDate(b.uploadedAt)}</div>
+        </div>
+        <button class="li-delete" aria-label="Remove ebook" title="Remove ebook">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>`;
+      li.querySelector('.li-delete').addEventListener('click', () => deleteLibraryBook(b.id, b.title));
+      libraryList.appendChild(li);
+    });
+  }catch(err){
+    // Non-critical — Library panel just stays empty if the server isn't reachable yet.
+  }
+}
+
+async function deleteLibraryBook(id, title){
+  if(!confirm(`Remove "${title}" from the library? This can't be undone.`)) return;
+  try{
+    const res = await fetch(`/api/library/${id}`, { method: 'DELETE' });
+    if(!res.ok){
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || 'Could not remove this ebook.');
+      return;
+    }
+    loadLibrary();
+  }catch(err){
+    alert(`Connection error: ${err.message}`);
+  }
+}
+
+libraryUploadBtn.addEventListener('click', () => libraryFileInput.click());
+
+libraryFileInput.addEventListener('change', async () => {
+  const file = libraryFileInput.files[0];
+  libraryFileInput.value = '';
+  if(!file) return;
+
+  if(file.type !== 'application/pdf'){
+    libraryUploadStatus.textContent = 'Only PDF files are supported.';
+    libraryUploadStatus.className = 'library-upload-status error';
+    return;
+  }
+
+  libraryUploadBtn.disabled = true;
+  libraryUploadStatus.textContent = `Uploading & parsing "${file.name}"…`;
+  libraryUploadStatus.className = 'library-upload-status';
+
+  try{
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/library/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if(!res.ok){
+      libraryUploadStatus.textContent = data.error || 'Upload failed.';
+      libraryUploadStatus.className = 'library-upload-status error';
+    } else {
+      libraryUploadStatus.textContent = `Added "${data.book.title}" · ${data.book.pageCount} pages.`;
+      libraryUploadStatus.className = 'library-upload-status ok';
+      loadLibrary();
+    }
+  }catch(err){
+    libraryUploadStatus.textContent = `Connection error: ${err.message}`;
+    libraryUploadStatus.className = 'library-upload-status error';
+  }
+  libraryUploadBtn.disabled = false;
+});
 
 async function checkHealth(){
   try{
@@ -1130,97 +1245,12 @@ async function checkReferenceStatus(){
   }
 }
 
-/* ---------------------------------------------------------
-   UPLOADED SOURCES
---------------------------------------------------------- */
-const uploadDropzone = document.getElementById('uploadDropzone');
-const uploadFileInput = document.getElementById('uploadFileInput');
-const uploadStatus = document.getElementById('uploadStatus');
-const uploadedSourcesList = document.getElementById('uploadedSourcesList');
-
-uploadDropzone.addEventListener('click', () => uploadFileInput.click());
-uploadFileInput.addEventListener('change', () => {
-  if(uploadFileInput.files[0]) uploadFile(uploadFileInput.files[0]);
-  uploadFileInput.value = '';
-});
-['dragover','dragenter'].forEach(evt => uploadDropzone.addEventListener(evt, (e) => {
-  e.preventDefault();
-  uploadDropzone.classList.add('dragover');
-}));
-['dragleave','drop'].forEach(evt => uploadDropzone.addEventListener(evt, (e) => {
-  e.preventDefault();
-  uploadDropzone.classList.remove('dragover');
-}));
-uploadDropzone.addEventListener('drop', (e) => {
-  const file = e.dataTransfer.files && e.dataTransfer.files[0];
-  if(file) uploadFile(file);
-});
-
-async function uploadFile(file){
-  uploadStatus.innerHTML = `<div class="upload-status-msg">Uploading ${escapeHtml(file.name)}…</div>`;
-  const formData = new FormData();
-  formData.append('file', file);
-  try{
-    const res = await fetch('/api/uploads', { method: 'POST', body: formData });
-    const data = await res.json();
-    if(!res.ok){
-      uploadStatus.innerHTML = `<div class="upload-status-msg error">${escapeHtml(data.error || 'Upload failed.')}</div>`;
-      return;
-    }
-    uploadStatus.innerHTML = `<div class="upload-status-msg success">Added "${escapeHtml(data.source.name)}" as a source.</div>`;
-    loadUploadedSources();
-  }catch(err){
-    uploadStatus.innerHTML = `<div class="upload-status-msg error">Connection error: ${escapeHtml(err.message)}</div>`;
-  }
-}
-
-async function loadUploadedSources(){
-  try{
-    const res = await fetch('/api/uploads');
-    const data = await res.json();
-    renderUploadedSources(data.sources || []);
-    populatePracticeSourceOptions();
-  }catch(err){
-    uploadedSourcesList.innerHTML = '';
-  }
-}
-
-function renderUploadedSources(sources){
-  if(!sources.length){
-    uploadedSourcesList.innerHTML = '';
-    return;
-  }
-  uploadedSourcesList.innerHTML = '';
-  sources.forEach(s => {
-    const item = document.createElement('div');
-    item.className = 'uploaded-source-item';
-    item.innerHTML = `
-      <div class="usi-info">
-        <div class="usi-name">📄 ${escapeHtml(s.name)}</div>
-        <div class="usi-meta">${s.type.toUpperCase()} · ${s.chunkCount} chunk${s.chunkCount === 1 ? '' : 's'}${s.truncated ? ' · truncated' : ''}</div>
-      </div>
-      <button class="item-delete" aria-label="Remove source">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
-      </button>
-    `;
-    item.querySelector('.item-delete').addEventListener('click', async () => {
-      try{
-        await fetch(`/api/uploads/${s.id}`, { method: 'DELETE' });
-        loadUploadedSources();
-      }catch(err){
-        alert('Could not remove source.');
-      }
-    });
-    uploadedSourcesList.appendChild(item);
-  });
-}
-
 initChips();
 initQuickQuestions();
 loadSources();
+loadLibrary();
 checkHealth();
 checkReferenceStatus();
-loadUploadedSources();
 
 /* ---------------------------------------------------------
    ROADMAP
@@ -1652,53 +1682,21 @@ loadTasks();
 --------------------------------------------------------- */
 const practiceBackdrop = document.getElementById('practiceBackdrop');
 
-async function populatePracticeSourceOptions(){
-  let uploadedList = [];
-  try{
-    const res = await fetch('/api/uploads');
-    const data = await res.json();
-    uploadedList = data.sources || [];
-  }catch(err){
-    // Non-fatal — the dropdowns just won't include uploads this time.
-  }
-
+function populateSectionSelects(){
   [document.getElementById('fcSectionSelect'), document.getElementById('qzSectionSelect')].forEach(sel => {
-    if(!sel) return;
-    const previousValue = sel.value;
-    sel.innerHTML = '<option value="">Choose a source…</option>';
-
-    if(sourceTitles.length){
-      const handbookGroup = document.createElement('optgroup');
-      handbookGroup.label = 'Handbook sections';
-      sourceTitles.forEach(title => {
-        const opt = document.createElement('option');
-        opt.value = title;
-        opt.textContent = title;
-        handbookGroup.appendChild(opt);
-      });
-      sel.appendChild(handbookGroup);
-    }
-
-    if(uploadedList.length){
-      const uploadGroup = document.createElement('optgroup');
-      uploadGroup.label = 'My uploads';
-      uploadedList.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = `upload:${s.id}`;
-        opt.textContent = s.name;
-        uploadGroup.appendChild(opt);
-      });
-      sel.appendChild(uploadGroup);
-    }
-
+    if(!sel || sel.dataset.populated) return;
+    sel.innerHTML = '<option value="">Choose a section…</option>';
+    sourceTitles.forEach(title => {
+      const opt = document.createElement('option');
+      opt.value = title;
+      opt.textContent = title;
+      sel.appendChild(opt);
+    });
     const customOpt = document.createElement('option');
     customOpt.value = '__custom__';
     customOpt.textContent = 'Custom topic…';
     sel.appendChild(customOpt);
-
-    if([...sel.options].some(o => o.value === previousValue)){
-      sel.value = previousValue;
-    }
+    sel.dataset.populated = '1';
   });
 }
 
@@ -1706,16 +1704,8 @@ function wireCustomTopicToggle(selectId, inputId){
   const sel = document.getElementById(selectId);
   const input = document.getElementById(inputId);
   sel.addEventListener('change', () => {
-    if(sel.value === '__custom__'){
-      input.style.display = 'block';
-      input.placeholder = 'or type your own topic…';
-    } else if(sel.value.startsWith('upload:')){
-      input.style.display = 'block';
-      input.placeholder = 'Optional: narrow to a specific part…';
-    } else {
-      input.style.display = 'none';
-      input.value = '';
-    }
+    input.style.display = sel.value === '__custom__' ? 'block' : 'none';
+    if(sel.value !== '__custom__') input.value = '';
   });
 }
 wireCustomTopicToggle('fcSectionSelect', 'fcCustomTopic');
@@ -1725,12 +1715,9 @@ function readTopicSelection(selectId, inputId){
   const sel = document.getElementById(selectId);
   const input = document.getElementById(inputId);
   if(sel.value === '__custom__'){
-    return { sectionTitle: null, uploadId: null, topic: input.value.trim() };
+    return { sectionTitle: null, topic: input.value.trim() };
   }
-  if(sel.value.startsWith('upload:')){
-    return { sectionTitle: null, uploadId: sel.value.slice(7), topic: input.value.trim() || null };
-  }
-  return { sectionTitle: sel.value || null, uploadId: null, topic: null };
+  return { sectionTitle: sel.value || null, topic: null };
 }
 
 function openPractice(){
@@ -1764,9 +1751,9 @@ const deckList = document.getElementById('deckList');
 let fcState = { cards: [], topic: '', index: 0, deckId: null };
 
 document.getElementById('fcGenerateBtn').addEventListener('click', async () => {
-  const { sectionTitle, uploadId, topic } = readTopicSelection('fcSectionSelect', 'fcCustomTopic');
-  if(!sectionTitle && !uploadId && !topic){
-    flashcardArea.innerHTML = '<div class="practice-error">Choose a section, an uploaded source, or type a topic first.</div>';
+  const { sectionTitle, topic } = readTopicSelection('fcSectionSelect', 'fcCustomTopic');
+  if(!sectionTitle && !topic){
+    flashcardArea.innerHTML = '<div class="practice-error">Choose a section or type a topic first.</div>';
     return;
   }
   const useReference = document.getElementById('fcUseReference').checked;
@@ -1778,7 +1765,7 @@ document.getElementById('fcGenerateBtn').addEventListener('click', async () => {
     const res = await fetch('/api/flashcards/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sectionTitle, uploadId, topic, useReference })
+      body: JSON.stringify({ sectionTitle, topic, useReference })
     });
     const data = await res.json();
     if(!res.ok){
@@ -1913,9 +1900,9 @@ const quizHistoryList = document.getElementById('quizHistoryList');
 let qzState = { questions: [], topic: '', index: 0, correctCount: 0, answered: false, selected: null, saved: false };
 
 document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
-  const { sectionTitle, uploadId, topic } = readTopicSelection('qzSectionSelect', 'qzCustomTopic');
-  if(!sectionTitle && !uploadId && !topic){
-    quizArea.innerHTML = '<div class="practice-error">Choose a section, an uploaded source, or type a topic first.</div>';
+  const { sectionTitle, topic } = readTopicSelection('qzSectionSelect', 'qzCustomTopic');
+  if(!sectionTitle && !topic){
+    quizArea.innerHTML = '<div class="practice-error">Choose a section or type a topic first.</div>';
     return;
   }
   const useReference = document.getElementById('qzUseReference').checked;
@@ -1928,7 +1915,7 @@ document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
     const res = await fetch('/api/quiz/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sectionTitle, uploadId, topic, useReference, count })
+      body: JSON.stringify({ sectionTitle, topic, useReference, count })
     });
     const data = await res.json();
     if(!res.ok){
@@ -2111,7 +2098,7 @@ function renderMarkdown(text){
   return out || `<p>${html}</p>`;
 }
 
-function addMessage(role, content, referenceInfo, uploadedSourceNames){
+function addMessage(role, content, referenceInfo, libraryInfo){
   if(heroBlock) heroBlock.style.display = 'none';
   const msg = document.createElement('div');
   msg.className = `msg ${role}`;
@@ -2132,6 +2119,20 @@ function addMessage(role, content, referenceInfo, uploadedSourceNames){
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
 
+    if(libraryInfo && libraryInfo.items && libraryInfo.items.length){
+      const byBook = {};
+      libraryInfo.items.forEach(it => {
+        (byBook[it.book] = byBook[it.book] || new Set()).add(it.page);
+      });
+      Object.entries(byBook).forEach(([book, pages]) => {
+        const chip = document.createElement('span');
+        chip.className = 'lib-chip';
+        chip.title = `Excerpts from your uploaded library ebook "${book}" were used as primary context for this answer`;
+        chip.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> ${escapeHtml(book)} · p. ${[...pages].join(', ')}`;
+        actions.appendChild(chip);
+      });
+    }
+
     if(referenceInfo && referenceInfo.pages && referenceInfo.pages.length){
       const pageList = [...new Set(referenceInfo.pages)].join(', ');
       const refChip = document.createElement('span');
@@ -2139,16 +2140,6 @@ function addMessage(role, content, referenceInfo, uploadedSourceNames){
       refChip.title = 'Short excerpts from your personal reference material were included as context for this answer';
       refChip.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Personal reference · p. ${pageList}`;
       actions.appendChild(refChip);
-    }
-
-    if(uploadedSourceNames && uploadedSourceNames.length){
-      uploadedSourceNames.forEach(name => {
-        const chip = document.createElement('span');
-        chip.className = 'ref-chip';
-        chip.title = 'A short excerpt from this uploaded source was included as context for this answer';
-        chip.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg> ${escapeHtml(name)}`;
-        actions.appendChild(chip);
-      });
     }
 
     const saveBtn = document.createElement('button');
@@ -2206,7 +2197,7 @@ async function sendMessage(){
     }
 
     messages.push({role:'assistant', content: data.reply});
-    addMessage('assistant', data.reply, data.reference, data.uploadedSources);
+    addMessage('assistant', data.reply, data.reference, data.library);
   }catch(err){
     removeThinking();
     addMessage('assistant', `**Connection error:** ${err.message}. Is the server running?`);

@@ -18,6 +18,41 @@ function extractQueryTerms(query) {
 }
 
 /**
+ * Some PDFs (especially exported from design tools like Canva) emit
+ * per-page text as many small fragments — sometimes per-word, sometimes
+ * per-character. Naively joining every fragment with a space turns
+ * per-character pages into "l e t t e r   s p a c e d" text, which breaks
+ * keyword search. Instead, only insert a space when there's an actual
+ * horizontal/vertical gap between consecutive fragments (a real word or
+ * line break), using each fragment's own position on the page.
+ */
+function joinTextItems(items) {
+  let text = '';
+  let last = null;
+  for (const item of items) {
+    const str = item.str || '';
+    if (!str) { last = null; continue; }
+    const t = item.transform || [1, 0, 0, 1, 0, 0];
+    const x = t[4], y = t[5];
+    const width = item.width || 0;
+    const height = item.height || Math.abs(t[3]) || 6;
+    if (last) {
+      const sameLine = Math.abs(y - last.y) < Math.max(1, height * 0.4);
+      if (!sameLine) {
+        text += '\n';
+      } else {
+        const gap = x - last.endX;
+        const threshold = Math.max(1, last.height * 0.18);
+        if (gap > threshold && !/\s$/.test(text)) text += ' ';
+      }
+    }
+    text += str;
+    last = { x, y, endX: x + width, height };
+  }
+  return text;
+}
+
+/**
  * Parses an already-in-memory PDF buffer into an array of per-page plain
  * text. Used by both the local-file path and the Google Drive path below,
  * so neither one needs to write anything to disk first.
@@ -28,7 +63,7 @@ async function parsePdfBuffer(buffer) {
 
   function pagerender(pageData) {
     return pageData.getTextContent().then(tc => {
-      const text = tc.items.map(item => item.str).join(' ');
+      const text = joinTextItems(tc.items);
       pages.push(text);
       return text;
     });
