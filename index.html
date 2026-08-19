@@ -248,6 +248,23 @@
     padding:0;
     background:var(--paper);
     min-width:0;
+    position:relative;
+  }
+  .new-chat-btn{
+    display:none;
+    position:absolute; top:14px; right:20px; z-index:5;
+    align-items:center; gap:6px;
+    padding:7px 13px; border-radius:20px;
+    background:var(--paper-raised); border:1px solid var(--line); color:var(--muted);
+    font-family:inherit; font-size:12px; font-weight:500; cursor:pointer;
+    box-shadow:var(--shadow);
+    transition:border-color .16s var(--ease), color .16s var(--ease), transform .16s var(--ease);
+  }
+  .new-chat-btn:hover{border-color:var(--accent-gold); color:var(--ink); transform:translateY(-1px);}
+  .new-chat-btn svg{width:13px;height:13px;}
+  @media (max-width:600px){
+    .new-chat-btn{top:10px; right:12px; padding:6px 10px; font-size:11px;}
+    .new-chat-btn .nc-label{display:none;}
   }
   .chat-scroll{
     flex:1;overflow-y:auto;
@@ -932,6 +949,10 @@
   </div>
 
   <div class="panel panel-center">
+    <button class="new-chat-btn" id="newChatBtn" aria-label="Start a new chat" title="Start a new chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      <span class="nc-label">New chat</span>
+    </button>
     <div class="chat-scroll" id="chatScroll">
       <div class="hero" id="heroBlock">
         <h1>Your personal PTE guidance tool.</h1>
@@ -1128,6 +1149,7 @@ let savedNoteContents = new Set(); // dedupe guard for "save reply" buttons
 
 const chatScroll = document.getElementById('chatScroll');
 const heroBlock = document.getElementById('heroBlock');
+const newChatBtn = document.getElementById('newChatBtn');
 const composerInput = document.getElementById('composerInput');
 const sendBtn = document.getElementById('sendBtn');
 const sourceList = document.getElementById('sourceList');
@@ -2197,6 +2219,7 @@ function renderMarkdown(text){
 
 function addMessage(role, content, referenceInfo, libraryInfo){
   if(heroBlock) heroBlock.style.display = 'none';
+  if(newChatBtn) newChatBtn.style.display = 'flex';
   const msg = document.createElement('div');
   msg.className = `msg ${role}`;
   const avatar = role === 'user' ? 'YOU' : 'PTE';
@@ -2265,6 +2288,18 @@ function removeThinking(){
   const t = document.getElementById('thinkingMsg');
   if(t) t.remove();
 }
+
+function startNewChat(){
+  if(!messages.length) return;
+  if(!confirm('Start a new chat? This clears the current conversation — nothing here is saved unless you already saved it to your Notebook.')) return;
+  document.querySelectorAll('#chatScroll .msg').forEach(el => el.remove());
+  messages = [];
+  composerInput.value = '';
+  newChatBtn.style.display = 'none';
+  if(heroBlock) heroBlock.style.display = '';
+  document.querySelectorAll('.source-list li').forEach(el => el.classList.remove('active'));
+}
+newChatBtn.addEventListener('click', startNewChat);
 
 async function sendMessage(){
   const text = composerInput.value.trim();
