@@ -168,9 +168,16 @@
   .source-doc .doc-meta{
     font-size:11.5px;color:var(--muted);
   }
-  .library-upload-status{ font-size:11.5px; color:var(--muted); margin:-4px 0 10px 2px; min-height:14px; }
+  .library-upload-status{ font-size:11.5px; color:var(--muted); margin:-4px 0 10px 2px; min-height:14px; display:flex; align-items:center; gap:6px; }
   .library-upload-status.error{ color:var(--accent-red); }
   .library-upload-status.ok{ color:var(--accent-teal); }
+  .library-upload-status.loading{ color:var(--accent-teal); }
+  .lib-spinner{
+    width:11px;height:11px;border-radius:50%;flex-shrink:0;
+    border:2px solid rgba(47,123,109,0.25); border-top-color:var(--accent-teal);
+    animation:libSpin .7s linear infinite;
+  }
+  @keyframes libSpin{ to{ transform:rotate(360deg); } }
   .library-list{ list-style:none; margin:0 0 6px; padding:0; }
   .library-item{
     display:flex; align-items:center; gap:8px;
@@ -1118,6 +1125,7 @@ if(sectionSearchInput){
 const libraryUploadStatus = document.getElementById('libraryUploadStatus');
 const libraryList = document.getElementById('libraryList');
 const libraryEmptyCard = document.getElementById('libraryEmptyCard');
+let libraryPollTimer = null;
 
 async function loadLibrary(){
   try{
@@ -1126,9 +1134,16 @@ async function loadLibrary(){
     const books = data.books || [];
 
     libraryList.innerHTML = '';
-    libraryEmptyCard.style.display = books.length ? 'none' : 'block';
+    libraryEmptyCard.style.display = (books.length || data.loading) ? 'none' : 'block';
 
-    if(data.error){
+    if(data.loading){
+      // Parsing large PDFs takes real time — this is normal progress, not
+      // a failure, so it gets a calm loading state (not the red error
+      // style) and already-loaded books still render below immediately.
+      const remaining = Math.max((data.configuredCount || 0) - books.length, 0);
+      libraryUploadStatus.innerHTML = `<span class="lib-spinner"></span>Loading library${remaining ? ` — ${books.length}/${data.configuredCount} ready` : '…'}`;
+      libraryUploadStatus.className = 'library-upload-status loading';
+    } else if(data.error){
       libraryUploadStatus.textContent = `Library config error: ${data.error}`;
       libraryUploadStatus.className = 'library-upload-status error';
     } else if(data.configuredCount && data.configuredCount > books.length){
@@ -1148,6 +1163,13 @@ async function loadLibrary(){
         </div>`;
       libraryList.appendChild(li);
     });
+
+    // While still loading, quietly re-poll and re-render — no manual
+    // refresh needed to see newly-parsed books appear once ready.
+    clearTimeout(libraryPollTimer);
+    if(data.loading){
+      libraryPollTimer = setTimeout(loadLibrary, 2000);
+    }
   }catch(err){
     // Non-critical — Library panel just stays empty if the server isn't reachable yet.
   }
