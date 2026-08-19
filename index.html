@@ -482,10 +482,18 @@
     font-size:12.5px;font-weight:500;cursor:pointer;
   }
   .notebook-add button:hover{background:#00934B;}
-  .note-card{border:1px solid var(--line);border-radius:10px;padding:10px 30px 10px 11px;margin-bottom:9px;background:var(--paper);position:relative;}
-  .note-card .note-title{font-weight:600;font-size:12.5px;margin-bottom:3px;}
-  .note-card .note-meta{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em;}
-  .note-card .note-content{font-size:12px;line-height:1.55;color:var(--ink);white-space:pre-wrap;overflow-wrap:break-word;}
+  .note-card{border:1px solid var(--line);border-radius:10px;padding:10px 30px 10px 11px;margin-bottom:9px;background:var(--paper);position:relative;cursor:pointer;transition:border-color .16s var(--ease);}
+  .note-card:hover{border-color:var(--accent-gold);}
+  .note-card .note-title-row{display:flex;align-items:flex-start;gap:6px;}
+  .note-card .note-title{font-weight:600;font-size:12.5px;flex:1;min-width:0;}
+  .note-card .note-chevron{
+    flex-shrink:0;width:13px;height:13px;color:var(--muted);margin-top:1px;
+    transition:transform .18s var(--ease);
+  }
+  .note-card.expanded .note-chevron{transform:rotate(90deg);}
+  .note-card .note-meta{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin:3px 0 0;text-transform:uppercase;letter-spacing:.03em;display:none;}
+  .note-card .note-content{font-size:12px;line-height:1.55;color:var(--ink);white-space:pre-wrap;overflow-wrap:break-word;margin-top:6px;display:none;}
+  .note-card.expanded .note-meta,.note-card.expanded .note-content{display:block;}
   .note-delete{
     position:absolute;top:8px;right:8px;background:none;border:none;color:var(--muted);
     cursor:pointer;padding:4px;line-height:0;
@@ -1522,11 +1530,18 @@ function renderNotes(notes){
       <button class="note-delete" aria-label="Delete note" data-id="${note.id}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
       </button>
-      <div class="note-title">${escapeHtml(note.title)}</div>
+      <div class="note-title-row">
+        <svg class="note-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <div class="note-title">${escapeHtml(note.title)}</div>
+      </div>
       <div class="note-meta">${tag} · ${formatDate(note.createdAt)}</div>
       <div class="note-content">${escapeHtml(note.content)}</div>
     `;
-    card.querySelector('.note-delete').addEventListener('click', () => deleteNote(note.id));
+    card.querySelector('.note-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteNote(note.id);
+    });
+    card.addEventListener('click', () => card.classList.toggle('expanded'));
     notesList.appendChild(card);
   });
 }
