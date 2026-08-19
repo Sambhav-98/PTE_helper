@@ -777,6 +777,103 @@
     .brand span.brand-text{display:none;}
     .topbar{padding:0 12px; padding-top:var(--safe-t);}
   }
+  /* WELCOME SPLASH */
+  .welcome-overlay{
+    display:none; position:fixed; inset:0; z-index:100;
+    align-items:center; justify-content:center; padding:24px;
+    background:radial-gradient(circle at 30% 20%, rgba(47,123,109,0.08), transparent 55%),
+               radial-gradient(circle at 80% 80%, rgba(201,142,30,0.08), transparent 55%),
+               var(--paper);
+  }
+  .welcome-overlay.open{display:flex;}
+  .welcome-card{
+    max-width:480px; text-align:center; animation:welcomeIn .5s var(--ease);
+  }
+  @keyframes welcomeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .welcome-mark{
+    width:52px;height:52px;border-radius:14px;background:var(--ink);color:#fff;
+    display:flex;align-items:center;justify-content:center;margin:0 auto 20px;
+    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;letter-spacing:.03em;
+    box-shadow:0 8px 24px rgba(23,32,58,0.18);
+  }
+  .welcome-card h1{font-family:'Source Serif 4',serif;font-size:28px;margin:0 0 14px;font-weight:700;line-height:1.25;}
+  .welcome-card p{font-size:14px;color:var(--muted);line-height:1.6;margin:0 0 28px;}
+  .welcome-actions{display:flex;flex-direction:column;gap:10px;}
+  .welcome-btn{
+    padding:13px 20px;border-radius:11px;font-family:inherit;font-size:14px;font-weight:600;
+    cursor:pointer;transition:transform .16s var(--ease), box-shadow .16s var(--ease), border-color .16s var(--ease);
+  }
+  .welcome-btn.primary{background:var(--ink);color:#fff;border:1px solid var(--ink);}
+  .welcome-btn.primary:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(23,32,58,0.22);}
+  .welcome-btn.ghost{background:none;color:var(--muted);border:1px solid var(--line);}
+  .welcome-btn.ghost:hover{color:var(--ink);border-color:var(--accent-gold);}
+
+  /* INTERACTIVE TOUR — spotlights real, live UI elements */
+  .tour-overlay{
+    display:none; position:fixed; inset:0; z-index:110; pointer-events:none;
+  }
+  .tour-overlay.open{display:block;}
+  .tour-overlay::before{
+    content:''; position:fixed; inset:0; background:rgba(23,32,58,0.55); pointer-events:auto;
+  }
+  .tour-spotlight{
+    position:fixed; border-radius:14px; border:3px solid var(--accent-gold);
+    box-shadow:0 0 0 6px rgba(201,142,30,0.22), 0 10px 30px rgba(0,0,0,0.3);
+    transition:top .38s var(--ease), left .38s var(--ease), width .38s var(--ease), height .38s var(--ease), opacity .2s var(--ease);
+    pointer-events:none; opacity:1;
+  }
+  .tour-spotlight.hidden{opacity:0;}
+  .tour-skip{
+    position:fixed; top:calc(var(--safe-t) + 16px); right:16px;
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:.03em;
+    color:#fff; background:rgba(23,32,58,0.55); padding:8px 13px; border-radius:20px;
+    cursor:pointer; pointer-events:auto; transition:background .16s var(--ease);
+  }
+  .tour-skip:hover{background:rgba(23,32,58,0.8);}
+  .tour-card{
+    position:fixed; width:min(320px, calc(100vw - 32px));
+    background:var(--paper-raised); border-radius:14px; box-shadow:0 20px 60px rgba(23,32,58,0.32);
+    pointer-events:auto; transition:top .38s var(--ease), left .38s var(--ease);
+    animation:tourCardIn .3s var(--ease);
+  }
+  @keyframes tourCardIn{ from{opacity:0; transform:scale(0.97);} to{opacity:1; transform:scale(1);} }
+  .tour-card-body{padding:18px 18px 4px;}
+  .tour-step-label{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--accent-teal); font-weight:600; margin-bottom:8px;
+  }
+  .tour-card h3{font-family:'Source Serif 4',serif; font-size:16.5px; margin:0 0 8px; font-weight:700;}
+  .tour-card p{font-size:12.5px; color:var(--muted); line-height:1.55; margin:0;}
+  .tour-card-footer{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:14px 18px; border-top:1px solid var(--line); margin-top:16px;
+  }
+  .tour-dots{display:flex; gap:5px;}
+  .tour-dots span{width:5px;height:5px;border-radius:50%;background:var(--line);transition:background .2s var(--ease), width .2s var(--ease);}
+  .tour-dots span.active{background:var(--accent-teal); width:14px; border-radius:3px;}
+  .tour-nav{display:flex; gap:8px;}
+  .tour-nav-btn{
+    padding:7px 14px; border-radius:8px; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer;
+    transition:background .16s var(--ease), border-color .16s var(--ease);
+  }
+  .tour-nav-btn.primary{background:var(--ink); color:#fff; border:1px solid var(--ink);}
+  .tour-nav-btn.primary:hover{background:#2a3350;}
+  .tour-nav-btn.ghost{background:none; color:var(--muted); border:1px solid var(--line);}
+  .tour-nav-btn.ghost:hover{color:var(--ink); border-color:var(--accent-gold);}
+  .tour-nav-btn:disabled{opacity:0.4; cursor:default; pointer-events:none;}
+  .tour-demo-msg .bubble{
+    border-left:3px solid var(--accent-gold); background:rgba(201,142,30,0.06);
+    border-radius:8px; padding:9px 9px 9px 12px;
+  }
+  .tour-demo-badge{
+    display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--accent-gold); background:rgba(201,142,30,0.14);
+    padding:2px 7px; border-radius:999px; margin-bottom:7px;
+  }
+  @media (max-width:600px){
+    .welcome-card h1{font-size:23px;}
+    .tour-card{width:calc(100vw - 32px);}
+  }
 </style>
 </head>
 <body>
@@ -795,6 +892,9 @@
       </div>
       <button class="icon-btn always-visible" id="openPractice" aria-label="Open practice: flashcards and quiz">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 21h9a2 2 0 0 0 2-2V9"/></svg>
+      </button>
+      <button class="icon-btn always-visible" id="openTour" aria-label="Take the tour">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </button>
       <button class="icon-btn" id="openStudio" aria-label="Open studio">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="14" y1="4" x2="14" y2="20"/></svg>
@@ -972,6 +1072,39 @@
         <div id="quizHistoryList"></div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- WELCOME SPLASH — shown once (localStorage-gated), always skippable -->
+<div class="welcome-overlay" id="welcomeOverlay">
+  <div class="welcome-card">
+    <div class="welcome-mark">PTE</div>
+    <h1>Welcome to PTE Prep Hub.</h1>
+    <p>This is your personal PTE guidance tool — answers grounded in your Library and the handbook, a study roadmap, a notebook that remembers what you save, and a built-in calendar and practice sets. Two minutes shows you all of it, for real, in the actual app.</p>
+    <div class="welcome-actions">
+      <button class="welcome-btn primary" id="welcomeStartTour">Show me around</button>
+      <button class="welcome-btn ghost" id="welcomeSkip">Skip, take me straight in</button>
+    </div>
+  </div>
+</div>
+
+<!-- INTERACTIVE TOUR — spotlights real, live UI elements; nothing here is a mockup -->
+<div class="tour-overlay" id="tourOverlay">
+  <div class="tour-spotlight" id="tourSpotlight"></div>
+  <div class="tour-skip" id="tourSkip">Skip tour ✕</div>
+  <div class="tour-card" id="tourCard">
+    <div class="tour-card-body">
+      <div class="tour-step-label" id="tourStepLabel">Step 1 of 6</div>
+      <h3 id="tourTitle"></h3>
+      <p id="tourBody"></p>
+    </div>
+    <div class="tour-card-footer">
+      <div class="tour-dots" id="tourDots"></div>
+      <div class="tour-nav">
+        <button class="tour-nav-btn ghost" id="tourBack">Back</button>
+        <button class="tour-nav-btn primary" id="tourNext">Next</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2164,6 +2297,259 @@ async function sendMessage(){
     addMessage('assistant', `**Connection error:** ${err.message}. Is the server running?`);
   }
   sendBtn.disabled = false;
+}
+
+/* ---------------------------------------------------------
+   WELCOME SPLASH + INTERACTIVE TOUR
+   The tour spotlights real, live elements in the actual app —
+   nothing here is a mockup or a screenshot. Step 1 even types a real
+   sample question into the real composer and renders a real-looking
+   reply bubble using the app's own message renderer.
+--------------------------------------------------------- */
+const welcomeOverlay = document.getElementById('welcomeOverlay');
+const tourOverlay = document.getElementById('tourOverlay');
+const tourSpotlight = document.getElementById('tourSpotlight');
+const tourCard = document.getElementById('tourCard');
+const tourStepLabel = document.getElementById('tourStepLabel');
+const tourTitle = document.getElementById('tourTitle');
+const tourBody = document.getElementById('tourBody');
+const tourDots = document.getElementById('tourDots');
+const tourBack = document.getElementById('tourBack');
+const tourNext = document.getElementById('tourNext');
+const tourSkip = document.getElementById('tourSkip');
+
+const TOUR_SEEN_KEY = 'pte_tour_seen_v1';
+const isMobileLayout = () => window.matchMedia('(max-width:880px)').matches;
+let demoMsgEls = [];
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+/** Types text into the composer character-by-character, like someone actually asking it. */
+async function typeIntoComposer(text){
+  composerInput.value = '';
+  composerInput.focus();
+  for(let i = 0; i < text.length; i++){
+    composerInput.value += text[i];
+    await sleep(22 + Math.random() * 20);
+  }
+  await sleep(300);
+}
+
+/** Renders a realistic demo message bubble using the app's own bubble markup — tagged so it's never mistaken for real history and is fully removed when the tour ends. */
+function addDemoMessage(role, html, opts = {}){
+  if(heroBlock) heroBlock.style.display = 'none';
+  const msg = document.createElement('div');
+  msg.className = `msg ${role} tour-demo-msg`;
+  const avatarEl = document.createElement('div');
+  avatarEl.className = 'avatar';
+  avatarEl.textContent = role === 'user' ? 'YOU' : 'PTE';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = (role === 'assistant' ? '<span class="tour-demo-badge">Demo answer</span><br>' : '') + html;
+  msg.appendChild(avatarEl);
+  msg.appendChild(bubble);
+
+  if(role === 'assistant' && opts.withSave){
+    const actions = document.createElement('div');
+    actions.className = 'msg-actions';
+    if(opts.withLibraryChip){
+      const chip = document.createElement('span');
+      chip.className = 'lib-chip';
+      chip.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> PTE Academic Handbook · p. 4`;
+      actions.appendChild(chip);
+    }
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'save-btn';
+    saveBtn.id = 'tourDemoSaveBtn';
+    saveBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Save to notebook';
+    saveBtn.addEventListener('click', () => {
+      // Purely visual for the demo — no real note is created, so the tour
+      // never pollutes a student's actual notebook data.
+      saveBtn.classList.add('saved');
+      saveBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Saved';
+    });
+    actions.appendChild(saveBtn);
+    bubble.appendChild(actions);
+  }
+
+  chatScroll.appendChild(msg);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+  demoMsgEls.push(msg);
+  return msg;
+}
+
+function clearDemoMessages(){
+  demoMsgEls.forEach(el => el.remove());
+  demoMsgEls = [];
+  if(heroBlock && !messages.length) heroBlock.style.display = '';
+}
+
+function resolveTarget(step){
+  if(typeof step.target === 'function') return step.target();
+  if(typeof step.target === 'string') return document.getElementById(step.target);
+  return null;
+}
+
+function positionSpotlight(el){
+  if(!el){
+    tourSpotlight.classList.add('hidden');
+    const cardW = tourCard.offsetWidth || 320, cardH = tourCard.offsetHeight || 220;
+    tourCard.style.top = Math.max(16, (window.innerHeight - cardH) / 2) + 'px';
+    tourCard.style.left = Math.max(16, (window.innerWidth - cardW) / 2) + 'px';
+    return;
+  }
+  tourSpotlight.classList.remove('hidden');
+  const pad = 8;
+  const rect = el.getBoundingClientRect();
+  tourSpotlight.style.top = (rect.top - pad) + 'px';
+  tourSpotlight.style.left = (rect.left - pad) + 'px';
+  tourSpotlight.style.width = (rect.width + pad * 2) + 'px';
+  tourSpotlight.style.height = (rect.height + pad * 2) + 'px';
+
+  const margin = 14;
+  const cardW = tourCard.offsetWidth || 320, cardH = tourCard.offsetHeight || 220;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  let top = (spaceBelow > cardH + margin || spaceBelow > spaceAbove)
+    ? rect.bottom + margin
+    : rect.top - cardH - margin;
+  top = Math.max(margin, Math.min(top, window.innerHeight - cardH - margin));
+  let left = rect.left + rect.width / 2 - cardW / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - cardW - margin));
+  tourCard.style.top = top + 'px';
+  tourCard.style.left = left + 'px';
+}
+
+const TOUR_STEPS = [
+  {
+    title: 'Ask anything, in plain language.',
+    body: 'Watch — this is a real question typed into the real composer below.',
+    target: 'composerInput',
+    async onEnter(){
+      if(demoMsgEls.length) return; // already shown earlier in this tour session — don't duplicate
+      tourNext.disabled = true;
+      await typeIntoComposer('How should I approach Describe Image?');
+      addDemoMessage('user', escapeHtml('How should I approach Describe Image?'));
+      await sleep(500);
+      addDemoMessage('assistant', renderMarkdown("Scan the image for 25 seconds and note 3–4 keywords — chart type, the highest and lowest points, and any clear trend. Speak for 40 seconds using a template: state what it shows, highlight the standout figures, then close with a one-line summary."), { withSave: true, withLibraryChip: true });
+      composerInput.value = '';
+      tourNext.disabled = false;
+    }
+  },
+  {
+    title: 'Save what\'s useful, right from the chat.',
+    body: 'Every answer can be saved straight to your Notebook — try the button on the reply above.',
+    target: () => document.getElementById('tourDemoSaveBtn')
+  },
+  {
+    title: 'Your Library comes first.',
+    body: 'Answers are grounded in your Library ebooks before anything else — the built-in handbook only fills gaps. Sections are searchable too.',
+    target: () => (isMobileLayout() ? document.getElementById('openSources') : panelLeft),
+    onEnter(){ if(isMobileLayout()) openDrawer(panelLeft); },
+    onExit(){ if(isMobileLayout()) closeDrawers(); }
+  },
+  {
+    title: 'Roadmap, Calendar, and Notebook.',
+    body: 'The Studio panel tracks your progress, holds a real calendar for study tasks, and keeps everything you save — all in one place.',
+    target: () => (isMobileLayout() ? document.getElementById('openStudio') : panelRight),
+    onEnter(){ if(isMobileLayout()) openDrawer(panelRight); },
+    onExit(){ if(isMobileLayout()) closeDrawers(); }
+  },
+  {
+    title: 'Practice on demand.',
+    body: 'Generate flashcards or a quiz from any topic or handbook section, whenever you want to test yourself.',
+    target: 'openPractice'
+  },
+  {
+    title: "That's the whole tour.",
+    body: 'Explore freely — answers stay grounded in what\'s actually in your Library and handbook. Replay this anytime from the help icon in the top bar.',
+    target: null
+  }
+];
+
+let tourIndex = 0;
+
+function renderTourDots(){
+  tourDots.innerHTML = '';
+  TOUR_STEPS.forEach((_, i) => {
+    const d = document.createElement('span');
+    if(i === tourIndex) d.className = 'active';
+    tourDots.appendChild(d);
+  });
+}
+
+async function showTourStep(index){
+  const step = TOUR_STEPS[index];
+  tourIndex = index;
+  tourStepLabel.textContent = `Step ${index + 1} of ${TOUR_STEPS.length}`;
+  tourTitle.textContent = step.title;
+  tourBody.textContent = step.body;
+  tourBack.disabled = index === 0;
+  tourNext.textContent = index === TOUR_STEPS.length - 1 ? 'Start exploring' : 'Next';
+  renderTourDots();
+
+  // Position on whatever's resolvable right away so the spotlight appears
+  // immediately (e.g. on the composer before the typing demo starts),
+  // then re-resolve after onEnter in case the real target only exists
+  // once that step's side effects (typing, drawer opening) have run.
+  positionSpotlight(resolveTarget(step));
+  if(step.onEnter) await step.onEnter();
+  positionSpotlight(resolveTarget(step));
+}
+
+function startTour(){
+  welcomeOverlay.classList.remove('open');
+  tourOverlay.classList.add('open');
+  tourIndex = 0;
+  showTourStep(0);
+}
+
+function endTour(){
+  const step = TOUR_STEPS[tourIndex];
+  if(step && step.onExit) step.onExit();
+  tourOverlay.classList.remove('open');
+  clearDemoMessages();
+  composerInput.value = '';
+  localStorage.setItem(TOUR_SEEN_KEY, '1');
+}
+
+tourNext.addEventListener('click', async () => {
+  const step = TOUR_STEPS[tourIndex];
+  if(step && step.onExit) step.onExit();
+  if(tourIndex === TOUR_STEPS.length - 1){
+    endTour();
+    return;
+  }
+  await showTourStep(tourIndex + 1);
+});
+
+tourBack.addEventListener('click', async () => {
+  if(tourIndex === 0) return;
+  const step = TOUR_STEPS[tourIndex];
+  if(step && step.onExit) step.onExit();
+  await showTourStep(tourIndex - 1);
+});
+
+tourSkip.addEventListener('click', endTour);
+
+window.addEventListener('resize', () => {
+  if(tourOverlay.classList.contains('open')) positionSpotlight(resolveTarget(TOUR_STEPS[tourIndex]));
+});
+
+document.getElementById('welcomeStartTour').addEventListener('click', startTour);
+document.getElementById('welcomeSkip').addEventListener('click', () => {
+  welcomeOverlay.classList.remove('open');
+  localStorage.setItem(TOUR_SEEN_KEY, '1');
+});
+document.getElementById('openTour').addEventListener('click', () => {
+  clearDemoMessages();
+  tourOverlay.classList.add('open');
+  tourIndex = 0;
+  showTourStep(0);
+});
+
+if(!localStorage.getItem(TOUR_SEEN_KEY)){
+  welcomeOverlay.classList.add('open');
 }
 </script>
 </body>
