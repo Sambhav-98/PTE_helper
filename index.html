@@ -49,6 +49,19 @@
     height:100vh;
     height:100dvh;
     min-height:560px;
+    transition:grid-template-columns .28s var(--ease);
+  }
+  @media (min-width:881px){
+    .app.left-collapsed{grid-template-columns: 0px 1fr 320px;}
+    .app.right-collapsed{grid-template-columns: 260px 1fr 0px;}
+    .app.left-collapsed.right-collapsed{grid-template-columns: 0px 1fr 0px;}
+    .app.left-collapsed .panel-left,
+    .app.right-collapsed .panel-right{
+      padding-left:0;padding-right:0;overflow:hidden;
+      border-width:0;
+    }
+    .sidebar-toggle{display:flex !important;}
+    .sidebar-toggle.active{background:var(--paper-raised);border-color:var(--accent-teal);color:var(--accent-teal);}
   }
 
   /* TOP BAR */
@@ -130,13 +143,30 @@
   .panel-left{
     border-right:1px solid var(--line);
     background:var(--paper-raised);
+    position:relative;
   }
   .panel-right{
     border-left:1px solid var(--line);
     background:var(--paper-raised);
     display:flex;
     flex-direction:column;
+    position:relative;
   }
+  .sidebar-pin{
+    display:none;
+    position:absolute; top:14px; right:14px; z-index:3;
+    width:26px;height:26px;border-radius:7px;
+    align-items:center;justify-content:center;
+    border:1px solid var(--line); background:var(--paper);
+    color:var(--muted); cursor:pointer; flex-shrink:0;
+    transition:border-color .16s var(--ease), color .16s var(--ease), background .16s var(--ease), transform .16s var(--ease);
+  }
+  .sidebar-pin svg{width:13px;height:13px;transition:transform .16s var(--ease);}
+  .sidebar-pin:hover{border-color:var(--accent-gold); color:var(--ink);}
+  .sidebar-pin.pinned{background:rgba(31,170,92,0.14); border-color:var(--accent-teal); color:var(--accent-teal);}
+  .sidebar-pin.pinned svg{transform:rotate(45deg);}
+  @media (min-width:881px){ .sidebar-pin{display:flex;} }
+  @media (min-width:881px){ .studio-tabs{margin-top:32px;} }
   .panel-mobile-header{
     display:none;
     align-items:center;justify-content:space-between;
@@ -917,7 +947,7 @@
 <div class="app">
   <div class="topbar">
     <div class="topbar-left">
-      <button class="icon-btn" id="openSources" aria-label="Open sources">
+      <button class="icon-btn sidebar-toggle" id="openSources" aria-label="Toggle sources panel" aria-expanded="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/></svg>
       </button>
       <div class="brand"><div class="mark">PTE</div><span class="brand-text">PTE Prep Hub</span></div>
@@ -932,7 +962,7 @@
       <button class="icon-btn always-visible" id="openTour" aria-label="Take the tour">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </button>
-      <button class="icon-btn" id="openStudio" aria-label="Open studio">
+      <button class="icon-btn sidebar-toggle" id="openStudio" aria-label="Toggle studio panel" aria-expanded="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="14" y1="4" x2="14" y2="20"/></svg>
       </button>
     </div>
@@ -941,6 +971,9 @@
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
 
   <div class="panel panel-left" id="panelLeft">
+    <button class="sidebar-pin" id="pinSources" aria-label="Keep sources panel open" aria-pressed="false" title="Keep this panel open">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>
+    </button>
     <div class="panel-mobile-header">
       <span class="title">Sources</span>
       <button class="icon-btn" id="closeSources" aria-label="Close sources" style="display:flex;">
@@ -986,6 +1019,9 @@
   </div>
 
   <div class="panel panel-right" id="panelRight">
+    <button class="sidebar-pin" id="pinStudio" aria-label="Keep studio panel open" aria-pressed="false" title="Keep this panel open">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>
+    </button>
     <div class="panel-mobile-header">
       <span class="title">Studio</span>
       <button class="icon-btn" id="closeStudio" aria-label="Close studio" style="display:flex;">
@@ -1173,11 +1209,15 @@ const chipRow = document.getElementById('chipRow');
 const apiStatus = document.getElementById('apiStatus');
 
 /* ---------------------------------------------------------
-   MOBILE DRAWERS
+   MOBILE DRAWERS + DESKTOP COLLAPSIBLE SIDEBARS
 --------------------------------------------------------- */
 const panelLeft = document.getElementById('panelLeft');
 const panelRight = document.getElementById('panelRight');
 const drawerBackdrop = document.getElementById('drawerBackdrop');
+const appEl = document.querySelector('.app');
+const openSourcesBtn = document.getElementById('openSources');
+const openStudioBtn = document.getElementById('openStudio');
+const isMobileLayout = () => window.matchMedia('(max-width:880px)').matches;
 
 function openDrawer(panel){
   closeDrawers();
@@ -1191,8 +1231,76 @@ function closeDrawers(){
   drawerBackdrop.classList.remove('open');
   document.body.classList.remove('drawer-open');
 }
-document.getElementById('openSources').addEventListener('click', () => openDrawer(panelLeft));
-document.getElementById('openStudio').addEventListener('click', () => openDrawer(panelRight));
+
+// Desktop: the same topbar buttons collapse/expand the always-visible
+// sidebars instead of opening a drawer overlay. State persists across
+// reloads so a collapsed panel stays out of the way next time too.
+const SIDEBAR_STATE_KEY = 'pte_sidebar_collapsed_v1';
+const pinSourcesBtn = document.getElementById('pinSources');
+const pinStudioBtn = document.getElementById('pinStudio');
+
+function getSidebarState(){
+  try{ return JSON.parse(localStorage.getItem(SIDEBAR_STATE_KEY)) || {}; }
+  catch{ return {}; }
+}
+function saveSidebarState(state){
+  try{ localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(state)); } catch{}
+}
+function applySidebarState(){
+  const state = getSidebarState();
+  // A pinned side is always forced open, regardless of whatever its own
+  // collapsed flag says — pinning exists specifically to guarantee that.
+  const leftCollapsed = Boolean(state.left) && !state.leftPinned;
+  const rightCollapsed = Boolean(state.right) && !state.rightPinned;
+  appEl.classList.toggle('left-collapsed', leftCollapsed);
+  appEl.classList.toggle('right-collapsed', rightCollapsed);
+  openSourcesBtn.classList.toggle('active', !leftCollapsed);
+  openStudioBtn.classList.toggle('active', !rightCollapsed);
+  openSourcesBtn.setAttribute('aria-expanded', String(!leftCollapsed));
+  openStudioBtn.setAttribute('aria-expanded', String(!rightCollapsed));
+
+  pinSourcesBtn.classList.toggle('pinned', Boolean(state.leftPinned));
+  pinStudioBtn.classList.toggle('pinned', Boolean(state.rightPinned));
+  pinSourcesBtn.setAttribute('aria-pressed', String(Boolean(state.leftPinned)));
+  pinStudioBtn.setAttribute('aria-pressed', String(Boolean(state.rightPinned)));
+  pinSourcesBtn.title = state.leftPinned ? 'Unpin — allow this panel to collapse' : 'Keep this panel open';
+  pinStudioBtn.title = state.rightPinned ? 'Unpin — allow this panel to collapse' : 'Keep this panel open';
+}
+function toggleSidebar(side){
+  const state = getSidebarState();
+  if(state[side + 'Pinned']) return; // pinned sides can't be collapsed via the main toggle
+  state[side] = !state[side];
+  saveSidebarState(state);
+  applySidebarState();
+}
+function setSidebarCollapsed(side, collapsed){
+  const state = getSidebarState();
+  if(collapsed && state[side + 'Pinned']) return; // pin overrides any attempt to collapse
+  if(Boolean(state[side]) === collapsed) return;
+  state[side] = collapsed;
+  saveSidebarState(state);
+  applySidebarState();
+}
+function togglePin(side){
+  const state = getSidebarState();
+  const key = side + 'Pinned';
+  state[key] = !state[key];
+  if(state[key]) state[side] = false; // pinning always opens the panel
+  saveSidebarState(state);
+  applySidebarState();
+}
+applySidebarState();
+
+openSourcesBtn.addEventListener('click', () => {
+  if(isMobileLayout()) openDrawer(panelLeft);
+  else toggleSidebar('left');
+});
+openStudioBtn.addEventListener('click', () => {
+  if(isMobileLayout()) openDrawer(panelRight);
+  else toggleSidebar('right');
+});
+pinSourcesBtn.addEventListener('click', () => togglePin('left'));
+pinStudioBtn.addEventListener('click', () => togglePin('right'));
 document.getElementById('closeSources').addEventListener('click', closeDrawers);
 document.getElementById('closeStudio').addEventListener('click', closeDrawers);
 drawerBackdrop.addEventListener('click', closeDrawers);
@@ -2461,7 +2569,6 @@ const tourNext = document.getElementById('tourNext');
 const tourSkip = document.getElementById('tourSkip');
 
 const TOUR_SEEN_KEY = 'pte_tour_seen_v1';
-const isMobileLayout = () => window.matchMedia('(max-width:880px)').matches;
 let demoMsgEls = [];
 
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
@@ -2587,15 +2694,29 @@ const TOUR_STEPS = [
     title: 'Your Library comes first.',
     body: 'Answers are grounded in your Library ebooks before anything else — the built-in handbook only fills gaps. Sections are searchable too.',
     target: () => (isMobileLayout() ? document.getElementById('openSources') : panelLeft),
-    onEnter(){ if(isMobileLayout()) openDrawer(panelLeft); },
-    onExit(){ if(isMobileLayout()) closeDrawers(); }
+    onEnter(){
+      if(isMobileLayout()){ openDrawer(panelLeft); return; }
+      this._wasCollapsed = getSidebarState().left;
+      if(this._wasCollapsed) setSidebarCollapsed('left', false);
+    },
+    onExit(){
+      if(isMobileLayout()){ closeDrawers(); return; }
+      if(this._wasCollapsed) setSidebarCollapsed('left', true);
+    }
   },
   {
     title: 'Roadmap, Calendar, and Notebook.',
     body: 'The Studio panel tracks your progress, holds a real calendar for study tasks, and keeps everything you save — all in one place.',
     target: () => (isMobileLayout() ? document.getElementById('openStudio') : panelRight),
-    onEnter(){ if(isMobileLayout()) openDrawer(panelRight); },
-    onExit(){ if(isMobileLayout()) closeDrawers(); }
+    onEnter(){
+      if(isMobileLayout()){ openDrawer(panelRight); return; }
+      this._wasCollapsed = getSidebarState().right;
+      if(this._wasCollapsed) setSidebarCollapsed('right', false);
+    },
+    onExit(){
+      if(isMobileLayout()){ closeDrawers(); return; }
+      if(this._wasCollapsed) setSidebarCollapsed('right', true);
+    }
   },
   {
     title: 'Practice on demand.',
