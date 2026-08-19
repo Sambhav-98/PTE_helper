@@ -203,7 +203,7 @@ async function generateStructuredContent(systemPrompt, userPrompt) {
 
 // Exposes just the section titles for the Sources panel.
 app.get('/api/sources', (req, res) => {
-  res.json(SOURCES.map(s => ({ title: s.title })));
+  res.json(SOURCES.map(s => ({ title: s.title, content: s.content })));
 });
 
 // Lets the frontend show whether a personal reference PDF is connected,
