@@ -41,7 +41,7 @@ function parseConfig() {
 // with a small RAM ceiling (e.g. Render's 512MB), where a single
 // image-heavy PDF can spike memory well past its own file size during
 // parsing. Override with LIBRARY_MAX_FILE_MB if your host has more RAM.
-const MAX_FILE_MB = Number(process.env.LIBRARY_MAX_FILE_MB) || 40;
+const MAX_FILE_MB = Number(process.env.LIBRARY_MAX_FILE_MB) || 120;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 
 /**
