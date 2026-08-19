@@ -14,6 +14,12 @@ const reference = require('./reference');
 // In-memory only: [{ id, title, pageCount, chunks: [{page, text, bookId, bookTitle}] }]
 let books = [];
 let lastInitError = null;
+// True from the moment init() starts until every configured book has been
+// attempted. The server starts accepting requests before this finishes
+// (large PDFs take real time to fetch + parse), so callers can use this to
+// show "still loading" instead of mistaking an in-progress load for a
+// failure.
+let isLoading = false;
 
 function parseConfig() {
   const raw = process.env.LIBRARY_BOOKS;
@@ -30,48 +36,68 @@ function parseConfig() {
     .filter(e => e.driveUrl);
 }
 
+// Books larger than this are skipped with a clear log message rather than
+// risking an OOM crash mid-parse — especially important on free-tier hosts
+// with a small RAM ceiling (e.g. Render's 512MB), where a single
+// image-heavy PDF can spike memory well past its own file size during
+// parsing. Override with LIBRARY_MAX_FILE_MB if your host has more RAM.
+const MAX_FILE_MB = Number(process.env.LIBRARY_MAX_FILE_MB) || 40;
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+
 /**
  * Fetches every configured book from Google Drive and rebuilds the
  * in-memory chunk index. Called once at server startup. A single book
  * failing to load (bad link, sharing not set to "Anyone with the link",
- * Drive's download-flow page changing) is logged and skipped rather than
- * taking down the whole app.
+ * Drive's download-flow page changing, or exceeding the size guardrail) is
+ * logged and skipped rather than taking down the whole app.
  */
 async function init() {
   books = [];
   lastInitError = null;
+  isLoading = true;
 
-  let configured;
   try {
-    configured = parseConfig();
-  } catch (err) {
-    lastInitError = err.message;
-    console.log(`Library: ${err.message}`);
-    return;
-  }
-
-  if (!configured.length) {
-    console.log('Library: no books configured (LIBRARY_BOOKS is empty or unset).');
-    return;
-  }
-
-  for (const { title, driveUrl } of configured) {
+    let configured;
     try {
-      const fileId = reference.extractDriveFileId(driveUrl);
-      if (!fileId) throw new Error('could not extract a Google Drive file ID from the link.');
-      const buffer = await reference.fetchGoogleDriveFile(fileId);
-      const pages = await reference.parsePdfBuffer(buffer);
-      const rawChunks = reference.buildChunks(pages);
-      const bookId = fileId;
-      const chunks = rawChunks.map(c => ({ ...c, bookId, bookTitle: title }));
-      books.push({ id: bookId, title, pageCount: pages.length, chunks });
-      console.log(`Library: loaded "${title}" — ${pages.length} pages.`);
+      configured = parseConfig();
     } catch (err) {
-      console.log(`Library: failed to load "${title}" — ${err.message}`);
+      lastInitError = err.message;
+      console.log(`Library: ${err.message}`);
+      return;
     }
-  }
 
-  console.log(`Library: ready — ${books.length}/${configured.length} book(s) loaded, ${totalChunks()} chunks indexed in memory.`);
+    if (!configured.length) {
+      console.log('Library: no books configured (LIBRARY_BOOKS is empty or unset).');
+      return;
+    }
+
+    for (const { title, driveUrl } of configured) {
+      let buffer = null;
+      try {
+        const fileId = reference.extractDriveFileId(driveUrl);
+        if (!fileId) throw new Error('could not extract a Google Drive file ID from the link.');
+        buffer = await reference.fetchGoogleDriveFile(fileId);
+        if (buffer.length > MAX_FILE_BYTES) {
+          const mb = (buffer.length / (1024 * 1024)).toFixed(1);
+          throw new Error(`file is ${mb}MB, over the ${MAX_FILE_MB}MB limit — compress it (downsample images) or raise LIBRARY_MAX_FILE_MB if your host has enough RAM.`);
+        }
+        const pages = await reference.parsePdfBuffer(buffer);
+        const rawChunks = reference.buildChunks(pages);
+        const bookId = fileId;
+        const chunks = rawChunks.map(c => ({ ...c, bookId, bookTitle: title }));
+        books.push({ id: bookId, title, pageCount: pages.length, chunks });
+        console.log(`Library: loaded "${title}" — ${pages.length} pages.`);
+      } catch (err) {
+        console.log(`Library: failed to load "${title}" — ${err.message}`);
+      } finally {
+        buffer = null; // let it be GC'd before the next book starts parsing
+      }
+    }
+
+    console.log(`Library: ready — ${books.length}/${configured.length} book(s) loaded, ${totalChunks()} chunks indexed in memory.`);
+  } finally {
+    isLoading = false;
+  }
 }
 
 function totalChunks() {
@@ -131,5 +157,6 @@ module.exports = {
   search,
   buildExcerptBlock,
   configuredCount,
+  isLoading: () => isLoading,
   getLastInitError: () => lastInitError
 };
