@@ -221,6 +221,7 @@ app.get('/api/library', (req, res) => {
   res.json({
     books: library.listBooks(),
     configuredCount: library.configuredCount(),
+    loading: library.isLoading(),
     error: library.getLastInitError()
   });
 });
