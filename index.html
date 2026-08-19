@@ -793,9 +793,6 @@
       <div class="status-pill" id="apiStatus" title="Checking server…">
         <span class="status-dot"></span>
       </div>
-      <button class="icon-btn always-visible" id="openCalendar" aria-label="Open calendar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      </button>
       <button class="icon-btn always-visible" id="openPractice" aria-label="Open practice: flashcards and quiz">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 21h9a2 2 0 0 0 2-2V9"/></svg>
       </button>
@@ -1629,11 +1626,9 @@ document.getElementById('calToday').addEventListener('click', () => {
   selectDay(toISODate(today));
 });
 
-// Calendar now lives inline in the Dashboard tab (not a modal). The topbar
-// button jumps straight to it — opening the Studio drawer on mobile, where
-// Dashboard is the default active tab; a no-op on desktop, where the
-// Studio panel (and calendar) is already always visible.
-document.getElementById('openCalendar').addEventListener('click', () => openDrawer(panelRight));
+// Calendar now lives inline in the Dashboard tab (not a modal, and the
+// topbar shortcut icon has been removed — the Studio icon already gets you
+// there, since Dashboard is the default active tab).
 
 async function initCalendar(){
   if(!tasksLoaded) await loadTasks();
