@@ -185,6 +185,25 @@ function libraryUnavailableReason() {
 }
 
 /**
+ * Keeps only questions the UI can actually render. A question with three
+ * options, a missing stem, or an answerIndex pointing past the end of the
+ * list would otherwise crash the review screen when it tries to display
+ * the correct answer — better to drop one bad question than break the
+ * whole test.
+ */
+function validQuestions(questions) {
+  return questions.filter(q =>
+    q &&
+    typeof q.question === 'string' && q.question.trim() &&
+    Array.isArray(q.options) &&
+    q.options.length === 4 &&
+    q.options.every(o => typeof o === 'string' && o.trim()) &&
+    Number.isInteger(q.answerIndex) &&
+    q.answerIndex >= 0 && q.answerIndex < q.options.length
+  );
+}
+
+/**
  * Resolves each question's `sourceId` into a real citation the UI can show:
  * book title, page number, and the passage the question came from.
  *
@@ -259,39 +278,129 @@ function buildAvoidBlock(avoid) {
  * Used by practice-test generation, which needs structured output rather
  * than free-form chat text.
  */
-async function generateStructuredContent(systemPrompt, userPrompt) {
-  const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+/**
+ * Pulls a JSON value out of a model reply that may be wrapped in prose or
+ * code fences. Tries the whole string first, then falls back to the
+ * outermost {...} or [...] in it.
+ */
+function extractJson(raw) {
+  const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch { /* fall through to substring extraction */ }
+
+  const candidates = [];
+  const firstObj = cleaned.indexOf('{'), lastObj = cleaned.lastIndexOf('}');
+  if (firstObj !== -1 && lastObj > firstObj) candidates.push(cleaned.slice(firstObj, lastObj + 1));
+  const firstArr = cleaned.indexOf('['), lastArr = cleaned.lastIndexOf(']');
+  if (firstArr !== -1 && lastArr > firstArr) candidates.push(cleaned.slice(firstArr, lastArr + 1));
+
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate);
+    } catch { /* try the next shape */ }
+  }
+  return null;
+}
+
+/**
+ * Normalises whatever came back into an array. JSON mode requires an object
+ * at the root, so the model returns { questions: [...] }, but a bare array
+ * or a differently-named single array property are both accepted rather
+ * than thrown away over a wrapper key.
+ */
+function toArray(parsed) {
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === 'object') {
+    if (Array.isArray(parsed.questions)) return parsed.questions;
+    const arrays = Object.values(parsed).filter(Array.isArray);
+    if (arrays.length === 1) return arrays[0];
+  }
+  return null;
+}
+
+async function callOpenAI(systemPrompt, userPrompt, { temperature, jsonMode }) {
+  const body = {
+    model: MODEL,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ],
+    temperature,
+    // Long explanations across 10 questions can run past a short default
+    // and a truncated reply is, by definition, broken JSON.
+    max_tokens: 4000
+  };
+  // JSON mode makes the API itself guarantee syntactically valid output,
+  // which is what actually fixes "the model returned something that wasn't
+  // valid JSON" rather than just retrying and hoping.
+  if (jsonMode) body.response_format = { type: 'json_object' };
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${OPENAI_API_KEY}`
     },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      temperature: 1.5
-    })
+    body: JSON.stringify(body)
   });
 
-  const data = await openaiRes.json();
-  if (!openaiRes.ok) {
-    const message = (data && data.error && data.error.message) || `OpenAI request failed (${openaiRes.status})`;
-    throw new Error(message);
+  const data = await res.json();
+  return { ok: res.ok, status: res.status, data };
+}
+
+/**
+ * Calls OpenAI and returns a parsed array. Used by practice-test
+ * generation, which needs structured output rather than free-form text.
+ *
+ * Three layers of defence, because a failed parse is a dead end the
+ * student sees as a red error box:
+ *   1. JSON mode, so the API guarantees well-formed output.
+ *   2. A tolerant parser, for models that still wrap it in prose.
+ *   3. One automatic retry at a lower temperature before giving up.
+ *
+ * Falls back to a plain call if the configured model doesn't support
+ * response_format, so setting OPENAI_MODEL to an older model still works.
+ */
+async function generateStructuredContent(systemPrompt, userPrompt) {
+  let jsonMode = true;
+  let lastProblem = 'the model returned something that wasn\'t valid JSON';
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    // Lower on the retry: high temperature is what breaks structure in the
+    // first place, and variety already comes from the material selection.
+    const temperature = attempt === 0 ? 0.9 : 0.4;
+    const { ok, status, data } = await callOpenAI(systemPrompt, userPrompt, { temperature, jsonMode });
+
+    if (!ok) {
+      const message = (data && data.error && data.error.message) || `OpenAI request failed (${status})`;
+      // Older models reject response_format — drop it and retry once.
+      if (jsonMode && /response_format/i.test(message)) {
+        jsonMode = false;
+        attempt--;
+        continue;
+      }
+      throw new Error(message);
+    }
+
+    const choice = data.choices?.[0];
+    if (choice?.finish_reason === 'length') {
+      lastProblem = 'the reply was cut off before it finished — try fewer questions';
+      continue;
+    }
+
+    const raw = choice?.message?.content || '';
+    const list = toArray(extractJson(raw));
+    if (list && list.length) return list;
+
+    // Nothing usable came back. Log what actually arrived — without this
+    // there's no way to tell a chatty preamble from a refusal from an
+    // empty reply, since the student only ever sees the red error box.
+    console.log(`Practice test: unusable reply on attempt ${attempt + 1} (jsonMode=${jsonMode}, finish_reason=${choice?.finish_reason}, ${raw.length} chars):`);
+    console.log(raw.slice(0, 600) || '  (empty response)');
   }
 
-  const raw = data.choices?.[0]?.message?.content || '';
-  const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
-
-  let parsed;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch (err) {
-    throw new Error('the model returned something that wasn\'t valid JSON — try generating again.');
-  }
-  return parsed;
+  throw new Error(`${lastProblem} — please try again.`);
 }
 
 // Exposes just the section titles for the Sources panel.
@@ -423,8 +532,8 @@ app.post('/api/quiz/generate', async (req, res) => {
     return res.status(400).json({ error: `Nothing in your Library matches "${label}" — try a different topic or pick an ebook.` });
   }
 
-  const systemPrompt = `You are setting a short practice test for a student preparing for the PTE Academic exam. Ground every question ONLY in the material below — never invent facts, numbers, or templates that aren't in it. Respond with ONLY a raw JSON array, no markdown code fences, no commentary before or after, in exactly this shape:
-[{"question": "...", "options": ["...","...","...","..."], "answerIndex": 0, "explanation": "under 40 words", "sourceId": "S1"}]
+  const systemPrompt = `You are setting a short practice test for a student preparing for the PTE Academic exam. Ground every question ONLY in the material below — never invent facts, numbers, or templates that aren't in it. Respond with ONLY a raw JSON object, no markdown code fences, no commentary before or after, in exactly this shape:
+{"questions": [{"question": "...", "options": ["...","...","...","..."], "answerIndex": 0, "explanation": "under 40 words", "sourceId": "S1"}]}
 
 Create exactly ${n} questions focused on: ${label}. Each question needs exactly 4 options with only one correct answer. "answerIndex" is the 0-based index of the correct option.
 
@@ -441,11 +550,17 @@ ${contextText}${refBlock ? `\n\nADDITIONAL PERSONAL REFERENCE EXCERPTS (paraphra
 
   try {
     const generated = await generateStructuredContent(systemPrompt, `Set a ${n}-question PTE practice test about: ${label}`);
-    if (!Array.isArray(generated) || !generated.length) {
+    const usable = validQuestions(generated);
+    if (!usable.length) {
+      console.log(`Practice test: ${generated.length} question(s) came back but none passed validation:`);
+      console.log(JSON.stringify(generated).slice(0, 600));
       return res.status(500).json({ error: 'The model returned no usable questions — try again.' });
     }
+    if (usable.length < generated.length) {
+      console.log(`Practice test: dropped ${generated.length - usable.length} malformed question(s).`);
+    }
 
-    const questions = shuffleQuizOptions(attachSources(generated, sources));
+    const questions = shuffleQuizOptions(attachSources(usable, sources));
     res.json({
       questions,
       topic: label,
