@@ -439,7 +439,34 @@ app.get('/api/library', (req, res) => {
  */
 const MAX_FIGURE_PAGES = 2;
 
-function figuresForTopMatches(matches) {
+// Whether a figure would actually help is a judgement call, and making it
+// badly is expensive in both directions: attach one every time and the
+// student stops looking at them (and every message pays vision tokens),
+// attach none and the diagrams in their books never get used.
+//
+// Two independent signals, either of which is enough:
+//
+//   1. The student asked for something visual. "Show me an example",
+//      "what does the template look like" — the request itself is the ask.
+//   2. The matched passage refers to a figure of its own. Text that says
+//      "as shown in the chart below" is incomplete without the chart, so
+//      the page is one where the figure carries real meaning.
+//
+// Neither present means the question is answerable in prose, and nothing
+// is fetched at all — no download, no vision tokens, no image.
+const VISUAL_REQUEST = /\b(image|picture|photo|diagram|chart|graph|figure|infographic|illustration|screenshot|visual(?:ly|ise|ize)?|look(?:s)? like|show me|show us|see it|draw)\b/i;
+const PASSAGE_CITES_FIGURE = /\b(figure|fig\.|chart|graph|diagram|infographic|illustration|shown below|shown above|see below|see above|as shown|pictured|table \d)\b/i;
+
+/**
+ * Decides whether any figure is worth fetching for this question, and if
+ * so from which pages.
+ *
+ * Only the top matches count, and only from a single book: a cache miss
+ * means downloading that book from Drive, so spreading across every
+ * loosely-related page would turn one question into several downloads.
+ * Returns null when there's nothing worth trying.
+ */
+function figuresForTopMatches(matches, question) {
   if (!figures.isEnabled() || !matches || !matches.length) return null;
 
   // Anchor on the single best match's book so we only ever touch one PDF.
@@ -447,13 +474,35 @@ function figuresForTopMatches(matches) {
   const bookTitle = matches[0].bookTitle;
   if (!bookId) return null;
 
+  const asked = VISUAL_REQUEST.test(String(question || ''));
+
   const pages = [];
   for (const m of matches) {
     if (m.bookId !== bookId) continue;
+    // When the student didn't ask for anything visual, only pages whose own
+    // text leans on a figure qualify.
+    if (!asked && !PASSAGE_CITES_FIGURE.test(m.text || '')) continue;
     if (!pages.includes(m.page)) pages.push(m.page);
     if (pages.length >= MAX_FIGURE_PAGES) break;
   }
-  return pages.length ? { bookId, bookTitle, pages } : null;
+  if (!pages.length) return null;
+
+  return { bookId, bookTitle, pages, reason: asked ? 'asked' : 'passage' };
+}
+
+/**
+ * Last check, after the answer comes back: did the model actually make use
+ * of the figures it was given?
+ *
+ * The prompt tells it to ignore an unhelpful figure silently, so a reply
+ * that never mentions one is a reply the figure didn't contribute to —
+ * and showing it anyway is exactly the noise that trains students to stop
+ * looking. Cheap to run and it costs nothing but a discarded image.
+ */
+const REPLY_USES_FIGURE = /\b(figure|fig\.|chart|graph|diagram|infographic|illustration|image|table|shown|pictured|above|below)\b/i;
+
+function replyUsedFigures(reply) {
+  return REPLY_USES_FIGURE.test(String(reply || ''));
 }
 
 /**
@@ -572,7 +621,7 @@ app.post('/api/chat', async (req, res) => {
   // than only the prose around it. Restricted to the top couple of pages:
   // this costs a Drive download on a cache miss, and vision tokens on
   // every hit, so it is not worth doing for every loosely-related page.
-  const figurePages = figuresForTopMatches(topMatches);
+  const figurePages = figuresForTopMatches(topMatches, lastUserMessage && lastUserMessage.content);
   let attachedFigures = [];
   if (figurePages) {
     attachedFigures = await figures.getFigures(figurePages.bookId, figurePages.pages);
@@ -583,7 +632,7 @@ app.post('/api/chat', async (req, res) => {
     : messages;
 
   if (attachedFigures.length) {
-    systemContent += `\n\nOne or more figures from ${figurePages.bookTitle} are attached to the student's message — images of diagrams, charts or tables from the pages your Library excerpts came from. The student can see these figures displayed alongside your reply, so refer to them directly and by page ("the scoring chart on p.${attachedFigures[0].page} shows…") rather than describing them as if they were invisible. Read what a chart actually shows and use it in your answer instead of talking around it. If an attached figure turns out to be irrelevant to the question, ignore it silently rather than mentioning it.`;
+    systemContent += `\n\nOne or more figures from ${figurePages.bookTitle} are attached to the student's message — images of diagrams, charts or tables from the pages your Library excerpts came from. The student can see these figures displayed alongside your reply, so refer to them directly and by page ("the scoring chart on p.${attachedFigures[0].page} shows…") rather than describing them as if they were invisible. Read what a chart actually shows and use it in your answer instead of talking around it. If an attached figure does not genuinely help answer this particular question, ignore it completely — do not mention it, do not describe it, and do not refer to it in passing. A figure that adds nothing is worse than no figure at all.`;
   }
 
   try {
@@ -622,6 +671,13 @@ app.post('/api/chat', async (req, res) => {
     }
 
     const reply = data.choices?.[0]?.message?.content || "I couldn't generate a response — please try again.";
+
+    // Attached is not the same as used. If the model answered without
+    // reaching for the figure, don't put it on screen.
+    const shownFigures = attachedFigures.length && replyUsedFigures(reply) ? attachedFigures : [];
+    if (attachedFigures.length && !shownFigures.length) {
+      console.log(`Figures: fetched for p.${figurePages.pages.join(',')} but the answer didn't use them — not shown.`);
+    }
     res.json({
       reply,
       reference: referencePagesUsed.length ? { pages: referencePagesUsed } : null,
@@ -629,14 +685,14 @@ app.post('/api/chat', async (req, res) => {
       // The figures the model was shown are described here so the client
       // can display the same ones. Only descriptors travel in the JSON —
       // the bytes come from the endpoint below, keeping chat replies small.
-      figures: attachedFigures.length
+      figures: shownFigures.length
         ? {
             book: figurePages.bookTitle,
-            items: attachedFigures.map((f, i) => ({
+            items: shownFigures.map((f, i) => ({
               page: f.page,
               width: f.width,
               height: f.height,
-              url: `/api/library/figure?book=${encodeURIComponent(figurePages.bookId)}&page=${f.page}&i=${indexOnPage(attachedFigures, i)}`
+              url: `/api/library/figure?book=${encodeURIComponent(figurePages.bookId)}&page=${f.page}&i=${indexOnPage(shownFigures, i)}`
             }))
           }
         : null
