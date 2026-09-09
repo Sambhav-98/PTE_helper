@@ -648,19 +648,86 @@
     min-width:0;padding:14px 0 0;margin-top:14px;background:none;
   }
 
-  /* PRACTICE MODAL (Flashcards + Quiz) */
-  .pmodal-tabs{
-    display:flex;gap:4px;margin:0 18px;padding:3px;flex-shrink:0;
-    background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  /* PRACTICE TEST MODAL */
+  /* Practice test runner */
+  .mock-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    border:1px solid var(--line);border-radius:10px;background:var(--paper);
+    padding:9px 12px;margin-bottom:14px;
   }
-  .pmodal-tab{
-    flex:1;border:none;background:transparent;padding:8px 4px;border-radius:7px;
-    font-size:12px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;
-    letter-spacing:.02em;color:var(--muted);cursor:pointer;
+  .mock-bar-left{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .mock-source{
+    font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
-  .pmodal-tab.active{background:var(--paper-raised);color:var(--ink);box-shadow:var(--shadow);font-weight:600;}
-  .pmodal-tab-content{display:none;}
-  .pmodal-tab-content.active{display:block;}
+  .mock-progress{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;}
+  .mock-timer{
+    font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;
+    padding:5px 11px;border-radius:8px;background:var(--paper-raised);
+    border:1px solid var(--line);flex-shrink:0;
+  }
+  .mock-timer.warn{color:var(--accent-red);border-color:rgba(193,68,58,0.45);}
+
+  /* Question palette — lets a student jump back to anything they skipped,
+     the way a real test paper's question navigator does. */
+  .qpalette{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;}
+  .qpalette button{
+    width:26px;height:26px;border-radius:7px;cursor:pointer;
+    border:1px solid var(--line);background:var(--paper);color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;
+  }
+  .qpalette button.answered{border-color:var(--accent-teal);color:var(--accent-teal);background:rgba(31,170,92,0.12);}
+  .qpalette button.current{outline:2px solid var(--accent-gold);outline-offset:1px;color:var(--ink);}
+
+  .quiz-option.selected{border-color:var(--accent-teal);background:rgba(31,170,92,0.14);font-weight:500;}
+  .mock-nav{display:flex;gap:8px;margin-top:14px;}
+  .mock-nav button{
+    flex:1;padding:10px;border-radius:8px;font-size:12.5px;cursor:pointer;font-family:inherit;
+    border:1px solid var(--line);background:var(--paper-raised);color:var(--ink);
+  }
+  .mock-nav button:hover:not(:disabled){border-color:var(--accent-gold);}
+  .mock-nav button:disabled{opacity:0.4;cursor:not-allowed;}
+  .mock-nav button.primary{background:var(--accent-teal);border-color:var(--accent-teal);color:#fff;font-weight:500;}
+  .mock-nav button.primary:hover{background:#37C273;}
+  .mock-note{font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5;}
+
+  /* Review — where the learning actually happens */
+  .review-item{
+    border:1px solid var(--line);border-radius:11px;padding:13px;margin-bottom:10px;background:var(--paper);
+  }
+  .review-head{display:flex;align-items:flex-start;gap:9px;margin-bottom:9px;}
+  .review-mark{
+    width:20px;height:20px;border-radius:6px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;
+  }
+  .review-mark.right{background:var(--accent-teal);}
+  .review-mark.wrong{background:var(--accent-red);}
+  .review-q{font-size:13.5px;font-weight:500;line-height:1.5;flex:1;min-width:0;}
+  .review-line{font-size:12px;line-height:1.6;margin:3px 0;}
+  .review-line .lbl{color:var(--muted);}
+  .review-line.right-ans{color:var(--accent-teal);}
+  .review-line.wrong-ans{color:var(--accent-red);}
+  .review-why{
+    font-size:12px;color:var(--ink);background:var(--paper-raised);border:1px solid var(--line);
+    border-radius:8px;padding:9px 11px;margin-top:9px;line-height:1.55;
+  }
+  .source-cite{
+    display:inline-flex;align-items:center;gap:6px;margin-top:10px;
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+    padding:4px 9px;border-radius:999px;
+    background:rgba(31,170,92,0.14);color:var(--accent-teal);
+  }
+  .source-cite svg{width:12px;height:12px;flex-shrink:0;}
+  .source-excerpt{
+    font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:8px;
+    padding-left:11px;border-left:2px solid var(--line);
+    max-height:88px;overflow-y:auto;
+  }
+  .source-toggle{
+    background:none;border:none;color:var(--muted);cursor:pointer;font-family:inherit;
+    font-size:11px;padding:6px 0 0;text-decoration:underline;
+  }
+  .source-toggle:hover{color:var(--ink);}
+
   .practice-body{flex:1;overflow-y:auto;padding:16px 18px 20px;}
 
   .practice-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
@@ -694,51 +761,14 @@
     display:flex;flex-direction:column;align-items:center;gap:10px;
   }
 
-  /* Flashcard flip viewer */
-  .flashcard{perspective:1200px;height:170px;margin-bottom:14px;cursor:pointer;}
-  .flashcard-inner{
-    position:relative;width:100%;height:100%;transition:transform .5s;
-    transform-style:preserve-3d;
-  }
-  .flashcard.flipped .flashcard-inner{transform:rotateY(180deg);}
-  .flashcard-face{
-    position:absolute;inset:0;backface-visibility:hidden;
-    border:1px solid var(--line);border-radius:14px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;padding:20px;font-size:14.5px;line-height:1.5;background:var(--paper-raised);
-    box-shadow:var(--shadow);
-  }
-  .flashcard-face .fc-tag{
-    font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;
-    letter-spacing:.05em;color:var(--muted);margin-bottom:10px;
-  }
-  .flashcard-back{transform:rotateY(180deg);background:var(--accent-teal);color:#fff;}
-  .flashcard-back .fc-tag{color:rgba(255,255,255,0.6);}
-  .flashcard-hint{text-align:center;font-size:10.5px;color:var(--muted);margin:-6px 0 14px;}
-  .flashcard-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
-  .flashcard-nav button{
-    padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--paper-raised);
-    font-size:12.5px;cursor:pointer;color:var(--ink);
-  }
-  .flashcard-nav button:hover{border-color:var(--accent-gold);}
-  .flashcard-nav button:disabled{opacity:0.4;cursor:not-allowed;}
-  .flashcard-counter{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);}
-  .deck-save-btn{
-    width:100%;padding:9px;border-radius:8px;border:1px solid var(--accent-teal);
-    background:rgba(31,170,92,0.14);color:var(--accent-teal);font-size:12.5px;font-weight:500;
-    cursor:pointer;margin-bottom:6px;
-  }
-  .deck-save-btn:hover{background:rgba(31,170,92,0.22);}
-  .deck-save-btn.saved{cursor:default;opacity:0.7;}
-
-  .deck-item, .quiz-history-item{
+  .quiz-history-item{
     display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:9px;
     padding:9px 10px;margin-bottom:7px;background:var(--paper);cursor:pointer;
   }
-  .deck-item:hover, .quiz-history-item:hover{border-color:var(--accent-gold);}
-  .deck-item-info, .quiz-history-info{flex:1;min-width:0;}
-  .deck-item-title, .quiz-history-title{font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .deck-item-meta, .quiz-history-meta{font-size:10.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+  .quiz-history-item:hover{border-color:var(--accent-gold);}
+  .quiz-history-info{flex:1;min-width:0;}
+  .quiz-history-title{font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .quiz-history-meta{font-size:10.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
   .item-delete{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;flex-shrink:0;}
   .item-delete:hover{color:var(--accent-red);}
   .item-delete svg{width:13px;height:13px;}
@@ -845,7 +875,6 @@
     .cal-body{flex-direction:column;}
     .cal-day-panel{border-left:none;border-top:1px solid var(--line);min-width:0;}
     .ring-card svg{width:64px;height:64px;}
-    .flashcard{height:200px;}
   }
 
   @media (max-width:420px){
@@ -965,7 +994,7 @@
       <div class="status-pill" id="apiStatus" title="Checking server…">
         <span class="status-dot"></span>
       </div>
-      <button class="icon-btn always-visible" id="openPractice" aria-label="Open practice: flashcards and quiz">
+      <button class="icon-btn always-visible" id="openPractice" aria-label="Open practice test">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 21h9a2 2 0 0 0 2-2V9"/></svg>
       </button>
       <button class="icon-btn always-visible" id="openTour" aria-label="Take the tour">
@@ -1107,59 +1136,35 @@
 <div class="cal-backdrop" id="practiceBackdrop">
   <div class="cal-modal">
     <div class="cal-modal-header">
-      <h2>Practice</h2>
+      <h2>Practice test</h2>
       <button class="icon-btn always-visible" id="closePractice" aria-label="Close practice">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
       </button>
     </div>
-    <div class="pmodal-tabs">
-      <button class="pmodal-tab active" data-ptab="flashcards">Flashcards</button>
-      <button class="pmodal-tab" data-ptab="quiz">Quiz</button>
-    </div>
     <div class="practice-body">
 
-      <div class="pmodal-tab-content active" data-ptab-content="flashcards">
-        <div class="practice-controls">
-          <select id="fcSectionSelect"></select>
-          <input type="text" id="fcCustomTopic" placeholder="or type your own topic…" style="display:none;">
-          <label class="ref-toggle" id="fcRefToggleWrap" style="display:none;">
-            <input type="checkbox" id="fcUseReference"> Include personal reference
-          </label>
-          <button class="practice-generate-btn" id="fcGenerateBtn">Generate flashcards</button>
-        </div>
-
-        <div id="flashcardArea">
-          <div class="practice-empty">Choose an ebook (or type a topic), then generate a set to begin.</div>
-        </div>
-
-        <div class="panel-title" style="margin-top:18px;">My saved decks</div>
-        <div id="deckList"></div>
+      <div class="practice-controls" id="qzSetup">
+        <select id="qzSectionSelect"></select>
+        <input type="text" id="qzCustomTopic" placeholder="or type your own topic…" style="display:none;">
+        <select id="qzCount">
+          <option value="5">5 questions</option>
+          <option value="8">8 questions</option>
+          <option value="10">10 questions</option>
+        </select>
+        <label class="ref-toggle" id="qzRefToggleWrap" style="display:none;">
+          <input type="checkbox" id="qzUseReference"> Include personal reference
+        </label>
+        <button class="practice-generate-btn" id="qzGenerateBtn">Start practice test</button>
       </div>
 
-      <div class="pmodal-tab-content" data-ptab-content="quiz">
-        <div class="practice-controls">
-          <select id="qzSectionSelect"></select>
-          <input type="text" id="qzCustomTopic" placeholder="or type your own topic…" style="display:none;">
-          <select id="qzCount">
-            <option value="5">5 questions</option>
-            <option value="8">8 questions</option>
-            <option value="10">10 questions</option>
-          </select>
-          <label class="ref-toggle" id="qzRefToggleWrap" style="display:none;">
-            <input type="checkbox" id="qzUseReference"> Include personal reference
-          </label>
-          <button class="practice-generate-btn" id="qzGenerateBtn">Generate quiz</button>
-        </div>
-
-        <div id="quizArea">
-          <div class="practice-empty">Choose an ebook (or type a topic), then generate a quiz to begin.</div>
-        </div>
-
-        <div class="panel-title" style="margin-top:18px;">Past attempts</div>
-        <div id="quizHistoryList"></div>
+      <div id="quizArea">
+        <div class="practice-empty">Choose an ebook (or type a topic), then start a test to begin.</div>
       </div>
 
+      <div class="panel-title" id="qzHistoryTitle" style="margin-top:18px;">Past attempts</div>
+      <div id="quizHistoryList"></div>
     </div>
+
   </div>
 </div>
 
@@ -1575,10 +1580,8 @@ async function checkReferenceStatus(){
     const data = await res.json();
     referenceAvailable = Boolean(data.available);
 
-    ['fcRefToggleWrap', 'qzRefToggleWrap'].forEach(id => {
-      const el = document.getElementById(id);
-      if(el) el.style.display = referenceAvailable ? 'flex' : 'none';
-    });
+    const refToggle = document.getElementById('qzRefToggleWrap');
+    if(refToggle) refToggle.style.display = referenceAvailable ? 'flex' : 'none';
 
     if(!metaEl) return;
     if(!data.available){
@@ -2025,55 +2028,58 @@ async function initCalendar(){
 loadTasks().then(initCalendar);
 
 /* ---------------------------------------------------------
-   PRACTICE — shared setup (Flashcards + Quiz)
+   PRACTICE TEST — a short, timed mock exam drawn from the Library.
+
+   Deliberately runs like a test rather than a drill: no feedback while
+   answering, everything reviewed at the end. That review is where the
+   learning sits, so every question carries a citation back to the book
+   and page it came from.
 --------------------------------------------------------- */
 const practiceBackdrop = document.getElementById('practiceBackdrop');
+// Declared up here because loadLibrary() can call populateSectionSelects()
+// before this block finishes evaluating.
+const quizArea = document.getElementById('quizArea');
+const quizHistoryList = document.getElementById('quizHistoryList');
 
-// Practice material comes from the Library (the uploaded ebooks), not the
-// built-in handbook — so these dropdowns list books, and are refreshed by
-// loadLibrary() as books finish parsing rather than filled once at startup.
+// Books currently loaded on the server, used to fill the ebook picker.
 function populateSectionSelects(){
-  [document.getElementById('fcSectionSelect'), document.getElementById('qzSectionSelect')].forEach(sel => {
-    if(!sel) return;
-    const previous = sel.value;
-    sel.innerHTML = libraryBooks.length
-      ? '<option value="">Choose an ebook…</option>'
-      : '<option value="">No ebooks in your Library yet</option>';
-    libraryBooks.forEach(book => {
-      const opt = document.createElement('option');
-      opt.value = book.id;
-      opt.textContent = book.title;
-      sel.appendChild(opt);
-    });
-    if(libraryBooks.length){
-      const customOpt = document.createElement('option');
-      customOpt.value = '__custom__';
-      customOpt.textContent = 'Custom topic…';
-      sel.appendChild(customOpt);
-    }
-    // Keep whatever the student had already picked if it still exists.
-    if(previous && [...sel.options].some(o => o.value === previous)) sel.value = previous;
+  const sel = document.getElementById('qzSectionSelect');
+  if(!sel) return;
+  const previous = sel.value;
+  sel.innerHTML = libraryBooks.length
+    ? '<option value="">Choose an ebook…</option>'
+    : '<option value="">No ebooks in your Library yet</option>';
+  libraryBooks.forEach(book => {
+    const opt = document.createElement('option');
+    opt.value = book.id;
+    opt.textContent = book.title;
+    sel.appendChild(opt);
   });
+  if(libraryBooks.length){
+    const customOpt = document.createElement('option');
+    customOpt.value = '__custom__';
+    customOpt.textContent = 'Custom topic…';
+    sel.appendChild(customOpt);
+  }
+  // Keep whatever the student had already picked if it still exists.
+  if(previous && [...sel.options].some(o => o.value === previous)) sel.value = previous;
   updatePracticeAvailability();
 }
 
-// With an empty Library there is nothing to generate from, so say that
-// plainly in the modal instead of letting Generate fail on every press.
+// With an empty Library there is nothing to build a test from, so say that
+// plainly instead of letting Start fail on every press.
 function updatePracticeAvailability(){
   const ready = libraryBooks.length > 0;
-  ['fcGenerateBtn', 'qzGenerateBtn'].forEach(id => {
-    const btn = document.getElementById(id);
-    if(btn) btn.disabled = !ready;
-  });
-  const emptyMsg = 'Your Library is empty — add ebooks via LIBRARY_BOOKS on the server to generate practice sets.';
-  const readyMsg = 'Choose an ebook (or type a topic), then generate to begin.';
-  ['flashcardArea', 'quizArea'].forEach(id => {
-    const area = document.getElementById(id);
-    // A generated set replaces the placeholder entirely, so its presence is
-    // the signal that nothing is in progress and this is safe to rewrite.
-    const placeholder = area && area.querySelector('.practice-empty');
-    if(placeholder) placeholder.textContent = ready ? readyMsg : emptyMsg;
-  });
+  const btn = document.getElementById('qzGenerateBtn');
+  if(btn) btn.disabled = !ready;
+  const placeholder = quizArea && quizArea.querySelector('.practice-empty');
+  // A running test replaces the placeholder entirely, so its presence is
+  // the signal that nothing is in progress and this is safe to rewrite.
+  if(placeholder){
+    placeholder.textContent = ready
+      ? 'Choose an ebook (or type a topic), then start a test to begin.'
+      : 'Your Library is empty — add ebooks via LIBRARY_BOOKS on the server to generate practice tests.';
+  }
 }
 
 function wireCustomTopicToggle(selectId, inputId){
@@ -2084,7 +2090,6 @@ function wireCustomTopicToggle(selectId, inputId){
     if(sel.value !== '__custom__') input.value = '';
   });
 }
-wireCustomTopicToggle('fcSectionSelect', 'fcCustomTopic');
 wireCustomTopicToggle('qzSectionSelect', 'qzCustomTopic');
 
 function readTopicSelection(selectId, inputId){
@@ -2100,7 +2105,6 @@ function readTopicSelection(selectId, inputId){
 function openPractice(){
   practiceBackdrop.classList.add('open');
   document.body.classList.add('drawer-open');
-  loadDecks();
   loadQuizHistory();
 }
 function closePractice(){
@@ -2112,185 +2116,50 @@ function closePractice(){
   }
 }
 
-// Escape closes whatever's on top, innermost first.
+// Escape closes whatever's on top, innermost first. A test in progress asks
+// first, so a stray keypress can't wipe out answers already given.
 document.addEventListener('keydown', (e) => {
   if(e.key !== 'Escape') return;
-  if(practiceBackdrop.classList.contains('open')){ closePractice(); return; }
+  if(practiceBackdrop.classList.contains('open')){
+    if(qzState.phase === 'testing' && !confirm('Leave the test? Your answers will be lost.')) return;
+    if(qzState.phase === 'testing') abandonTest();
+    closePractice();
+    return;
+  }
   if(panelLeft.classList.contains('open') || panelRight.classList.contains('open')) closeDrawers();
 });
+
 document.getElementById('openPractice').addEventListener('click', openPractice);
-document.getElementById('closePractice').addEventListener('click', closePractice);
-practiceBackdrop.addEventListener('click', (e) => { if(e.target === practiceBackdrop) closePractice(); });
-
-document.querySelectorAll('.pmodal-tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.pmodal-tab').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.pmodal-tab-content').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelector(`.pmodal-tab-content[data-ptab-content="${btn.dataset.ptab}"]`).classList.add('active');
-  });
+document.getElementById('closePractice').addEventListener('click', () => {
+  if(qzState.phase === 'testing' && !confirm('Leave the test? Your answers will be lost.')) return;
+  if(qzState.phase === 'testing') abandonTest();
+  closePractice();
+});
+practiceBackdrop.addEventListener('click', (e) => {
+  if(e.target !== practiceBackdrop) return;
+  if(qzState.phase === 'testing') return; // don't let a stray click bin a test
+  closePractice();
 });
 
 /* ---------------------------------------------------------
-   FLASHCARDS
+   TEST STATE
 --------------------------------------------------------- */
-const flashcardArea = document.getElementById('flashcardArea');
-const deckList = document.getElementById('deckList');
-let fcState = { cards: [], topic: '', index: 0, deckId: null };
+// phase: 'idle' | 'testing' | 'review'
+// answers[i] is the chosen option index, or null if left unanswered.
+let qzState = {
+  phase: 'idle', questions: [], topic: '', books: [],
+  index: 0, answers: [], saved: false,
+  deadline: 0, startedAt: 0, elapsedMs: 0
+};
+let qzTimer = null;
 
-document.getElementById('fcGenerateBtn').addEventListener('click', async () => {
-  const { bookId, topic } = readTopicSelection('fcSectionSelect', 'fcCustomTopic');
-  if(!bookId && !topic){
-    flashcardArea.innerHTML = '<div class="practice-error">Choose an ebook or type a topic first.</div>';
-    return;
-  }
-  const useReference = document.getElementById('fcUseReference').checked;
-  const btn = document.getElementById('fcGenerateBtn');
-  btn.disabled = true;
-  flashcardArea.innerHTML = '<div class="practice-loading"><div class="thinking"><span></span><span></span><span></span></div>Generating flashcards…</div>';
-
-  try{
-    const res = await fetch('/api/flashcards/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bookId, topic, useReference })
-    });
-    const data = await res.json();
-    if(!res.ok){
-      flashcardArea.innerHTML = `<div class="practice-error">${escapeHtml(data.error || 'Could not generate flashcards.')}</div>`;
-      btn.disabled = false;
-      return;
-    }
-    fcState = { cards: data.cards, topic: data.topic, index: 0, deckId: null };
-    renderFlashcardViewer();
-  }catch(err){
-    flashcardArea.innerHTML = `<div class="practice-error">Connection error: ${escapeHtml(err.message)}</div>`;
-  }
-  btn.disabled = false;
-});
-
-function renderFlashcardViewer(){
-  if(!fcState.cards.length){
-    flashcardArea.innerHTML = '<div class="practice-empty">Choose an ebook (or type a topic), then generate a set to begin.</div>';
-    return;
-  }
-  const card = fcState.cards[fcState.index];
-  flashcardArea.innerHTML = `
-    <div class="flashcard" id="flashcardEl">
-      <div class="flashcard-inner">
-        <div class="flashcard-face flashcard-front">
-          <div class="fc-tag">${escapeHtml(fcState.topic)}</div>
-          <div>${escapeHtml(card.front)}</div>
-        </div>
-        <div class="flashcard-face flashcard-back">
-          <div class="fc-tag">Answer</div>
-          <div>${escapeHtml(card.back)}</div>
-        </div>
-      </div>
-    </div>
-    <div class="flashcard-hint">Tap the card to flip it</div>
-    <div class="flashcard-nav">
-      <button id="fcPrevBtn" ${fcState.index === 0 ? 'disabled' : ''}>‹ Prev</button>
-      <span class="flashcard-counter">${fcState.index + 1} / ${fcState.cards.length}</span>
-      <button id="fcNextBtn" ${fcState.index === fcState.cards.length - 1 ? 'disabled' : ''}>Next ›</button>
-    </div>
-    <button class="deck-save-btn" id="fcSaveDeckBtn">${fcState.deckId ? '✓ Saved to My decks' : '💾 Save this deck'}</button>
-  `;
-  document.getElementById('flashcardEl').addEventListener('click', (e) => {
-    e.currentTarget.classList.toggle('flipped');
-  });
-  document.getElementById('fcPrevBtn').addEventListener('click', () => {
-    if(fcState.index > 0){ fcState.index--; renderFlashcardViewer(); }
-  });
-  document.getElementById('fcNextBtn').addEventListener('click', () => {
-    if(fcState.index < fcState.cards.length - 1){ fcState.index++; renderFlashcardViewer(); }
-  });
-  const saveBtn = document.getElementById('fcSaveDeckBtn');
-  if(fcState.deckId){
-    saveBtn.classList.add('saved');
-  } else {
-    saveBtn.addEventListener('click', saveCurrentDeck);
-  }
-}
-
-async function saveCurrentDeck(){
-  const btn = document.getElementById('fcSaveDeckBtn');
-  btn.disabled = true;
-  try{
-    const res = await fetch('/api/flashcards', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic: fcState.topic, cards: fcState.cards })
-    });
-    const data = await res.json();
-    if(res.ok){
-      fcState.deckId = data.deck.id;
-      renderFlashcardViewer();
-      loadDecks();
-    }
-  }catch(err){
-    alert('Could not save deck. Is the server running?');
-  }
-  btn.disabled = false;
-}
-
-async function loadDecks(){
-  try{
-    const res = await fetch('/api/flashcards');
-    const data = await res.json();
-    renderDeckList(data.decks || []);
-  }catch(err){
-    deckList.innerHTML = '';
-  }
-}
-
-function renderDeckList(decks){
-  if(!decks.length){
-    deckList.innerHTML = '<div class="practice-empty">No saved decks yet.</div>';
-    return;
-  }
-  deckList.innerHTML = '';
-  decks.forEach(deck => {
-    const item = document.createElement('div');
-    item.className = 'deck-item';
-    item.innerHTML = `
-      <div class="deck-item-info">
-        <div class="deck-item-title">${escapeHtml(deck.topic)}</div>
-        <div class="deck-item-meta">${deck.cards.length} cards · ${formatDate(deck.createdAt)}</div>
-      </div>
-      <button class="item-delete" aria-label="Delete deck">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
-      </button>
-    `;
-    item.addEventListener('click', (e) => {
-      if(e.target.closest('.item-delete')) return;
-      fcState = { cards: deck.cards, topic: deck.topic, index: 0, deckId: deck.id };
-      renderFlashcardViewer();
-    });
-    item.querySelector('.item-delete').addEventListener('click', async () => {
-      try{
-        await fetch(`/api/flashcards/${deck.id}`, { method: 'DELETE' });
-        if(fcState.deckId === deck.id){ fcState = { cards: [], topic: '', index: 0, deckId: null }; renderFlashcardViewer(); }
-        loadDecks();
-      }catch(err){
-        alert('Could not delete deck.');
-      }
-    });
-    deckList.appendChild(item);
-  });
-}
-
-/* ---------------------------------------------------------
-   QUIZ
---------------------------------------------------------- */
-const quizArea = document.getElementById('quizArea');
-const quizHistoryList = document.getElementById('quizHistoryList');
-let qzState = { questions: [], topic: '', index: 0, correctCount: 0, answered: false, selected: null, saved: false };
+// A minute per question, the rough pace of a real timed section. Generous
+// enough not to feel punishing, tight enough to still be practice.
+const SECONDS_PER_QUESTION = 60;
 
 // Questions already served this session, keyed by ebook+topic, so a repeat
-// press of Generate can ask the server for something the student hasn't
-// seen yet. Memory-only and per-tab — it's a nice-to-have, not state worth
-// persisting, and it resets on reload along with everything else.
+// test can ask the server for something the student hasn't seen yet.
+// Memory-only and per-tab — it resets on reload along with everything else.
 const seenQuizQuestions = new Map();
 const SEEN_LIMIT = 20;
 
@@ -2303,6 +2172,23 @@ function recordSeenQuestions(key, questions){
   seenQuizQuestions.set(key, merged.slice(0, SEEN_LIMIT));
 }
 
+function setSetupVisible(visible){
+  const setup = document.getElementById('qzSetup');
+  const histTitle = document.getElementById('qzHistoryTitle');
+  if(setup) setup.style.display = visible ? 'flex' : 'none';
+  // Past attempts are a distraction mid-test and clutter the results page.
+  if(histTitle) histTitle.style.display = visible ? 'block' : 'none';
+  quizHistoryList.style.display = visible ? 'block' : 'none';
+}
+
+function formatClock(ms){
+  const total = Math.max(0, Math.round(ms / 1000));
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/* ---------------------------------------------------------
+   STARTING A TEST
+--------------------------------------------------------- */
 document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
   const { bookId, topic } = readTopicSelection('qzSectionSelect', 'qzCustomTopic');
   if(!bookId && !topic){
@@ -2313,7 +2199,7 @@ document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
   const count = document.getElementById('qzCount').value;
   const btn = document.getElementById('qzGenerateBtn');
   btn.disabled = true;
-  quizArea.innerHTML = '<div class="practice-loading"><div class="thinking"><span></span><span></span><span></span></div>Generating quiz…</div>';
+  quizArea.innerHTML = '<div class="practice-loading"><div class="thinking"><span></span><span></span><span></span></div>Setting your practice test…</div>';
 
   try{
     const res = await fetch('/api/quiz/generate', {
@@ -2323,106 +2209,270 @@ document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
     });
     const data = await res.json();
     if(!res.ok){
-      quizArea.innerHTML = `<div class="practice-error">${escapeHtml(data.error || 'Could not generate quiz.')}</div>`;
+      quizArea.innerHTML = `<div class="practice-error">${escapeHtml(data.error || 'Could not start the test.')}</div>`;
       btn.disabled = false;
       return;
     }
     recordSeenQuestions(seenKey(bookId, topic), data.questions);
-    qzState = { questions: data.questions, topic: data.topic, index: 0, correctCount: 0, answered: false, selected: null, saved: false };
-    renderQuizQuestion();
+    startTest(data);
   }catch(err){
     quizArea.innerHTML = `<div class="practice-error">Connection error: ${escapeHtml(err.message)}</div>`;
   }
   btn.disabled = false;
 });
 
-function renderQuizQuestion(){
-  if(!qzState.questions.length){
-    quizArea.innerHTML = '<div class="practice-empty">Choose an ebook (or type a topic), then generate a quiz to begin.</div>';
-    return;
-  }
+function startTest(data){
+  const now = Date.now();
+  qzState = {
+    phase: 'testing',
+    questions: data.questions,
+    topic: data.topic,
+    books: data.books || [],
+    index: 0,
+    answers: new Array(data.questions.length).fill(null),
+    saved: false,
+    startedAt: now,
+    deadline: now + data.questions.length * SECONDS_PER_QUESTION * 1000,
+    elapsedMs: 0
+  };
+  setSetupVisible(false);
+  startTimer();
+  renderTestQuestion();
+}
+
+function abandonTest(){
+  stopTimer();
+  qzState.phase = 'idle';
+  setSetupVisible(true);
+  quizArea.innerHTML = '<div class="practice-empty">Choose an ebook (or type a topic), then start a test to begin.</div>';
+  updatePracticeAvailability();
+}
+
+function startTimer(){
+  stopTimer();
+  qzTimer = setInterval(() => {
+    const el = document.getElementById('mockTimer');
+    const left = qzState.deadline - Date.now();
+    if(left <= 0){
+      // Out of time — submit whatever's been answered, like a real section.
+      finishTest(true);
+      return;
+    }
+    if(el){
+      el.textContent = formatClock(left);
+      el.classList.toggle('warn', left < 60000);
+    }
+  }, 500);
+}
+function stopTimer(){
+  if(qzTimer){ clearInterval(qzTimer); qzTimer = null; }
+}
+
+/* ---------------------------------------------------------
+   TAKING THE TEST — no feedback until it's submitted
+--------------------------------------------------------- */
+function renderTestQuestion(){
   const q = qzState.questions[qzState.index];
+  if(!q) return;
+  const answered = qzState.answers.filter(a => a !== null).length;
+  const total = qzState.questions.length;
+  const isLast = qzState.index === total - 1;
+  const timeLeft = Math.max(0, qzState.deadline - Date.now());
+
+  // The book is named up front for context, but not the page or passage —
+  // that would hand over the answer mid-test.
+  const bookLine = qzState.books.length
+    ? `Drawn from ${escapeHtml(qzState.books.join(', '))}`
+    : escapeHtml(qzState.topic);
+
   const optionsHtml = q.options.map((opt, i) => `
-    <button class="quiz-option" data-idx="${i}">${escapeHtml(opt)}</button>
+    <button class="quiz-option${qzState.answers[qzState.index] === i ? ' selected' : ''}" data-idx="${i}">${escapeHtml(opt)}</button>
   `).join('');
 
+  const paletteHtml = qzState.questions.map((_, i) => {
+    const cls = [
+      qzState.answers[i] !== null ? 'answered' : '',
+      i === qzState.index ? 'current' : ''
+    ].filter(Boolean).join(' ');
+    return `<button class="${cls}" data-jump="${i}" aria-label="Go to question ${i + 1}">${i + 1}</button>`;
+  }).join('');
+
   quizArea.innerHTML = `
-    <div class="quiz-progress">${escapeHtml(qzState.topic)} · Question ${qzState.index + 1} of ${qzState.questions.length}</div>
+    <div class="mock-bar">
+      <div class="mock-bar-left">
+        <span class="mock-progress">Question ${qzState.index + 1} of ${total}</span>
+        <span class="mock-source">${bookLine}</span>
+      </div>
+      <span class="mock-timer" id="mockTimer">${formatClock(timeLeft)}</span>
+    </div>
+    <div class="qpalette">${paletteHtml}</div>
     <div class="quiz-question">${escapeHtml(q.question)}</div>
     <div id="quizOptions">${optionsHtml}</div>
-    <div id="quizExplanationWrap"></div>
+    <div class="mock-nav">
+      <button id="qzPrev" ${qzState.index === 0 ? 'disabled' : ''}>‹ Back</button>
+      ${isLast
+        ? '<button class="primary" id="qzSubmit">Submit test</button>'
+        : '<button class="primary" id="qzNext">Next ›</button>'}
+    </div>
+    <div class="mock-note">${answered} of ${total} answered · you can change any answer before submitting. Marks and explanations come at the end.</div>
   `;
 
   document.querySelectorAll('#quizOptions .quiz-option').forEach(btn => {
-    btn.addEventListener('click', () => selectQuizAnswer(Number(btn.dataset.idx)));
+    btn.addEventListener('click', () => {
+      // Re-tapping the chosen option clears it, so a guess can be undone.
+      const idx = Number(btn.dataset.idx);
+      qzState.answers[qzState.index] = qzState.answers[qzState.index] === idx ? null : idx;
+      renderTestQuestion();
+    });
+  });
+  document.querySelectorAll('.qpalette button').forEach(btn => {
+    btn.addEventListener('click', () => { qzState.index = Number(btn.dataset.jump); renderTestQuestion(); });
+  });
+  const prev = document.getElementById('qzPrev');
+  if(prev) prev.addEventListener('click', () => { if(qzState.index > 0){ qzState.index--; renderTestQuestion(); } });
+  const next = document.getElementById('qzNext');
+  if(next) next.addEventListener('click', () => { if(qzState.index < total - 1){ qzState.index++; renderTestQuestion(); } });
+  const submit = document.getElementById('qzSubmit');
+  if(submit) submit.addEventListener('click', () => {
+    const unanswered = qzState.answers.filter(a => a === null).length;
+    if(unanswered && !confirm(`${unanswered} question${unanswered > 1 ? 's are' : ' is'} still unanswered. Submit anyway?`)) return;
+    finishTest(false);
   });
 }
 
-function selectQuizAnswer(idx){
-  if(qzState.answered) return;
-  qzState.answered = true;
-  qzState.selected = idx;
-  const q = qzState.questions[qzState.index];
-  const isCorrect = idx === q.answerIndex;
-  if(isCorrect) qzState.correctCount++;
-
-  document.querySelectorAll('#quizOptions .quiz-option').forEach((btn, i) => {
-    btn.disabled = true;
-    if(i === q.answerIndex) btn.classList.add('correct');
-    else if(i === idx) btn.classList.add('incorrect');
-  });
-
-  const isLast = qzState.index === qzState.questions.length - 1;
-  document.getElementById('quizExplanationWrap').innerHTML = `
-    <div class="quiz-explanation">${isCorrect ? '✓ Correct. ' : '✗ Not quite. '}${escapeHtml(q.explanation || '')}</div>
-    <button class="quiz-next-btn" id="quizNextBtn">${isLast ? 'See results' : 'Next question ›'}</button>
-  `;
-  document.getElementById('quizNextBtn').addEventListener('click', () => {
-    if(isLast){ renderQuizResult(); }
-    else { qzState.index++; qzState.answered = false; qzState.selected = null; renderQuizQuestion(); }
-  });
+/* ---------------------------------------------------------
+   RESULTS + REVIEW — the part that teaches
+--------------------------------------------------------- */
+function finishTest(ranOutOfTime){
+  stopTimer();
+  qzState.phase = 'review';
+  qzState.elapsedMs = Date.now() - qzState.startedAt;
+  renderTestResult(ranOutOfTime);
 }
 
-function renderQuizResult(){
+function scoreTest(){
+  return qzState.questions.reduce(
+    (sum, q, i) => sum + (qzState.answers[i] === q.answerIndex ? 1 : 0), 0);
+}
+
+function renderTestResult(ranOutOfTime){
   const total = qzState.questions.length;
-  const score = qzState.correctCount;
+  const score = scoreTest();
+  const pct = total ? Math.round((score / total) * 100) : 0;
+  const badge = pct >= 80 ? 'good' : pct >= 50 ? 'mid' : 'low';
+
   quizArea.innerHTML = `
     <div class="quiz-result">
       <div class="score-big">${score}/${total}</div>
-      <div class="score-label">${escapeHtml(qzState.topic)}</div>
+      <div class="score-label">
+        ${pct}% · ${escapeHtml(qzState.topic)}<br>
+        Time taken ${formatClock(qzState.elapsedMs)}${ranOutOfTime ? ' · time ran out' : ''}
+      </div>
       <div class="quiz-result-actions">
-        <button class="quiz-save-result-btn" id="quizSaveResultBtn">${qzState.saved ? '✓ Saved' : 'Save result'}</button>
-        <button class="quiz-retry-btn" id="quizRetryBtn">Try another</button>
+        <button class="quiz-save-result-btn" id="quizSaveResultBtn">Save result</button>
+        <button class="quiz-retry-btn" id="quizRetryBtn">New test</button>
       </div>
     </div>
+    <div class="panel-title" style="margin-top:20px;">Review — every question, with its source</div>
+    <div id="reviewList"></div>
+    <div class="mock-note" style="text-align:left;margin-top:12px;">
+      This is practice built from your own Library, not an official PTE score.
+      Use the page references to go back and read anything you missed.
+    </div>
   `;
+
+  renderReview();
+
   const saveBtn = document.getElementById('quizSaveResultBtn');
-  if(qzState.saved){
+  saveBtn.className = `quiz-save-result-btn ${badge}`;
+  saveBtn.addEventListener('click', async () => {
+    if(qzState.saved) return;
     saveBtn.disabled = true;
-  } else {
-    saveBtn.addEventListener('click', async () => {
-      saveBtn.disabled = true;
-      try{
-        await fetch('/api/quiz-history', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic: qzState.topic, score, total })
-        });
-        qzState.saved = true;
-        saveBtn.textContent = '✓ Saved';
-        loadQuizHistory();
-      }catch(err){
-        saveBtn.disabled = false;
-        alert('Could not save result. Is the server running?');
-      }
-    });
-  }
+    try{
+      await fetch('/api/quiz-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: qzState.topic, score, total })
+      });
+      qzState.saved = true;
+      saveBtn.textContent = '✓ Saved';
+      loadQuizHistory();
+    }catch(err){
+      saveBtn.disabled = false;
+      alert('Could not save result. Is the server running?');
+    }
+  });
+
   document.getElementById('quizRetryBtn').addEventListener('click', () => {
-    qzState = { questions: [], topic: '', index: 0, correctCount: 0, answered: false, selected: null, saved: false };
-    renderQuizQuestion();
+    qzState = { phase: 'idle', questions: [], topic: '', books: [], index: 0, answers: [], saved: false, deadline: 0, startedAt: 0, elapsedMs: 0 };
+    setSetupVisible(true);
+    quizArea.innerHTML = '<div class="practice-empty">Choose an ebook (or type a topic), then start a test to begin.</div>';
+    updatePracticeAvailability();
   });
 }
 
+function renderReview(){
+  const list = document.getElementById('reviewList');
+  list.innerHTML = '';
+
+  qzState.questions.forEach((q, i) => {
+    const given = qzState.answers[i];
+    const correct = given === q.answerIndex;
+    const item = document.createElement('div');
+    item.className = 'review-item';
+
+    const yourLine = given === null
+      ? '<div class="review-line"><span class="lbl">Your answer:</span> not answered</div>'
+      : `<div class="review-line ${correct ? 'right-ans' : 'wrong-ans'}"><span class="lbl">Your answer:</span> ${escapeHtml(q.options[given])}</div>`;
+
+    // Only worth restating the right answer when they didn't get there.
+    const correctLine = correct
+      ? ''
+      : `<div class="review-line right-ans"><span class="lbl">Correct answer:</span> ${escapeHtml(q.options[q.answerIndex])}</div>`;
+
+    // The citation is the whole point of reviewing: it sends the student
+    // back to the exact page rather than leaving them with a bare verdict.
+    let sourceHtml = '';
+    if(q.source && q.source.book){
+      sourceHtml = `
+        <div>
+          <span class="source-cite">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            ${escapeHtml(q.source.book)} · p. ${escapeHtml(String(q.source.page))}
+          </span>
+        </div>
+        ${q.source.excerpt ? `
+          <button class="source-toggle" data-toggle="${i}">Show the passage this came from</button>
+          <div class="source-excerpt" id="excerpt-${i}" style="display:none;">${escapeHtml(q.source.excerpt)}</div>
+        ` : ''}`;
+    }
+
+    item.innerHTML = `
+      <div class="review-head">
+        <span class="review-mark ${correct ? 'right' : 'wrong'}">${correct ? '✓' : '✗'}</span>
+        <span class="review-q">${i + 1}. ${escapeHtml(q.question)}</span>
+      </div>
+      ${yourLine}
+      ${correctLine}
+      ${q.explanation ? `<div class="review-why">${escapeHtml(q.explanation)}</div>` : ''}
+      ${sourceHtml}
+    `;
+    list.appendChild(item);
+  });
+
+  list.querySelectorAll('.source-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const box = document.getElementById(`excerpt-${btn.dataset.toggle}`);
+      const open = box.style.display !== 'none';
+      box.style.display = open ? 'none' : 'block';
+      btn.textContent = open ? 'Show the passage this came from' : 'Hide the passage';
+    });
+  });
+}
+
+/* ---------------------------------------------------------
+   PAST ATTEMPTS
+--------------------------------------------------------- */
 async function loadQuizHistory(){
   try{
     const res = await fetch('/api/quiz-history');
@@ -2793,8 +2843,8 @@ const TOUR_STEPS = [
     }
   },
   {
-    title: 'Practice on demand.',
-    body: 'Generate flashcards or a quiz straight from your Library ebooks — any book, or any topic across all of them.',
+    title: 'Test yourself, properly.',
+    body: 'Sit a short timed practice test built from your Library ebooks. Marks come at the end, and every question tells you the book and page it came from.',
     target: 'openPractice'
   },
   {

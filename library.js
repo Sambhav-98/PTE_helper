@@ -236,6 +236,37 @@ function buildExcerptBlock(matches, maxChars = 3500) {
   return parts.join('\n\n');
 }
 
+/**
+ * Like buildExcerptBlock, but tags each excerpt with a short id (S1, S2, …)
+ * and hands back the matching lookup table.
+ *
+ * This is what lets a generated question cite its own origin: the model is
+ * asked to return the id of the excerpt it drew each question from, and the
+ * server turns that id back into a real book title, page number, and the
+ * passage itself. On a study platform the citation is half the value — a
+ * wrong answer is only useful if the student can go read the thing they
+ * got wrong.
+ */
+function buildLabelledExcerpts(matches, maxChars = 3500) {
+  let used = 0;
+  const parts = [];
+  const sources = [];
+
+  matches.forEach((m, i) => {
+    if (used >= maxChars) return;
+    const remaining = maxChars - used;
+    let text = m.text;
+    if (text.length > remaining) text = text.slice(0, remaining).trim() + '…';
+
+    const id = `S${i + 1}`;
+    parts.push(`[${id} | ${m.bookTitle}, p.${m.page}]\n${text}`);
+    sources.push({ id, book: m.bookTitle, page: m.page, text });
+    used += text.length;
+  });
+
+  return { block: parts.join('\n\n'), sources };
+}
+
 module.exports = {
   init,
   listBooks,
@@ -246,6 +277,7 @@ module.exports = {
   searchVaried,
   sampleChunks,
   buildExcerptBlock,
+  buildLabelledExcerpts,
   configuredCount,
   isLoading: () => isLoading,
   getLastInitError: () => lastInitError

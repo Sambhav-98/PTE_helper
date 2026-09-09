@@ -123,7 +123,7 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
- * Builds grounding material for flashcard/quiz generation. This draws from
+ * Builds grounding material for practice-test generation. This draws from
  * the Library (the institution's own uploaded ebooks) ONLY — the built-in
  * handbook in knowledge.js is deliberately not used here, so practice
  * material always reflects what the students are actually studying from.
@@ -155,7 +155,9 @@ function buildStudyContext(bookId, topic, useReference) {
     }
   }
 
-  const contextText = matches.length ? library.buildExcerptBlock(matches, 3500) : '';
+  const { block: contextText, sources } = matches.length
+    ? library.buildLabelledExcerpts(matches, 3500)
+    : { block: '', sources: [] };
 
   let refBlock = '';
   if (useReference && referenceReady && referenceChunks.length && query) {
@@ -163,7 +165,7 @@ function buildStudyContext(bookId, topic, useReference) {
     if (refMatches.length) refBlock = reference.buildExcerptBlock(refMatches, 700);
   }
 
-  return { contextText, refBlock };
+  return { contextText, refBlock, sources };
 }
 
 /**
@@ -180,6 +182,37 @@ function libraryUnavailableReason() {
     return 'Practice sets are generated from your Library, which is currently empty. Add ebooks via LIBRARY_BOOKS on the server, then try again.';
   }
   return null;
+}
+
+/**
+ * Resolves each question's `sourceId` into a real citation the UI can show:
+ * book title, page number, and the passage the question came from.
+ *
+ * The id comes back from the model, so it can be missing or made up. An
+ * unrecognised id is dropped rather than guessed at — a question with no
+ * citation is fine, but a citation pointing at the wrong page would send a
+ * student to read something that doesn't answer their mistake. Where the
+ * whole test came from a single excerpt, that one is used as the fallback.
+ */
+function attachSources(questions, sources) {
+  const byId = new Map(sources.map(src => [src.id, src]));
+  const only = sources.length === 1 ? sources[0] : null;
+
+  return questions.map(q => {
+    const match = byId.get(String(q.sourceId || '').trim()) || only || null;
+    const { sourceId, ...rest } = q;
+    if (!match) return rest;
+    return {
+      ...rest,
+      source: {
+        book: match.book,
+        page: match.page,
+        // Trimmed for display — the point is enough context to recognise
+        // the passage, not to reproduce a page of the book in the UI.
+        excerpt: match.text.length > 400 ? match.text.slice(0, 400).trim() + '…' : match.text
+      }
+    };
+  });
 }
 
 /**
@@ -223,8 +256,8 @@ function buildAvoidBlock(avoid) {
 
 /**
  * Calls OpenAI with a system+user prompt and parses the reply as JSON.
- * Used by flashcard/quiz generation, which both need structured output
- * rather than free-form chat text.
+ * Used by practice-test generation, which needs structured output rather
+ * than free-form chat text.
  */
 async function generateStructuredContent(systemPrompt, userPrompt) {
   const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -364,90 +397,6 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// ---- Flashcards -------------------------------------------------------
-
-app.post('/api/flashcards/generate', async (req, res) => {
-  if (!OPENAI_API_KEY) {
-    return res.status(500).json({ error: 'The server has no OPENAI_API_KEY configured. Add one to your .env file and restart the server.' });
-  }
-  const { bookId, topic, useReference } = req.body || {};
-  if (!bookId && !topic) {
-    return res.status(400).json({ error: 'Choose an ebook or enter a topic first.' });
-  }
-
-  const unavailable = libraryUnavailableReason();
-  if (unavailable) return res.status(400).json({ error: unavailable });
-
-  const book = bookId ? library.getBook(bookId) : null;
-  if (bookId && !book) {
-    return res.status(400).json({ error: 'That ebook is no longer loaded — reload the page and pick again.' });
-  }
-
-  const label = (topic && topic.trim()) || (book && book.title) || '';
-  const { contextText, refBlock } = buildStudyContext(bookId, topic, useReference);
-  if (!contextText) {
-    return res.status(400).json({ error: `Nothing in your Library matches "${label}" — try a different topic or pick an ebook.` });
-  }
-
-  const systemPrompt = `You create study flashcards for a PTE Academic student, grounded ONLY in the material below — never invent facts, numbers, or templates that aren't in it. Respond with ONLY a raw JSON array, no markdown code fences, no commentary before or after, in exactly this shape:
-[{"front": "short question or term (under 15 words)", "back": "concise direct answer (under 35 words)"}]
-Create between 6 and 10 cards focused on: ${label}
-
-LIBRARY MATERIAL (excerpts from the student's own ebooks — each labelled with its book title and page):
-${contextText}${refBlock ? `\n\nADDITIONAL PERSONAL REFERENCE EXCERPTS (paraphrase these in your own words rather than quoting them):\n${refBlock}` : ''}`;
-
-  try {
-    const cards = await generateStructuredContent(systemPrompt, `Generate flashcards about: ${label}`);
-    if (!Array.isArray(cards) || !cards.length) {
-      return res.status(500).json({ error: 'The model returned no usable flashcards — try again.' });
-    }
-    res.json({ cards, topic: label });
-  } catch (err) {
-    res.status(500).json({ error: `Could not generate flashcards: ${err.message}` });
-  }
-});
-
-app.get('/api/flashcards', async (req, res) => {
-  try {
-    const decks = await storage.getFlashcardDecks();
-    res.json({ decks });
-  } catch (err) {
-    res.status(500).json({ error: `Could not load flashcard decks: ${err.message}` });
-  }
-});
-
-app.post('/api/flashcards', async (req, res) => {
-  const { topic, cards } = req.body || {};
-  if (!topic || !Array.isArray(cards) || !cards.length) {
-    return res.status(400).json({ error: 'topic and a non-empty cards array are required.' });
-  }
-  try {
-    const decks = await storage.getFlashcardDecks();
-    const deck = {
-      id: crypto.randomUUID(),
-      topic: String(topic).trim() || 'Untitled deck',
-      cards,
-      createdAt: new Date().toISOString()
-    };
-    decks.unshift(deck);
-    await storage.saveFlashcardDecks(decks);
-    res.json({ deck });
-  } catch (err) {
-    res.status(500).json({ error: `Could not save deck: ${err.message}` });
-  }
-});
-
-app.delete('/api/flashcards/:id', async (req, res) => {
-  try {
-    const decks = await storage.getFlashcardDecks();
-    const filtered = decks.filter(d => d.id !== req.params.id);
-    await storage.saveFlashcardDecks(filtered);
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: `Could not delete deck: ${err.message}` });
-  }
-});
-
 // ---- Quiz ---------------------------------------------------------------
 
 app.post('/api/quiz/generate', async (req, res) => {
@@ -469,27 +418,43 @@ app.post('/api/quiz/generate', async (req, res) => {
   }
 
   const label = (topic && topic.trim()) || (book && book.title) || '';
-  const { contextText, refBlock } = buildStudyContext(bookId, topic, useReference);
+  const { contextText, refBlock, sources } = buildStudyContext(bookId, topic, useReference);
   if (!contextText) {
     return res.status(400).json({ error: `Nothing in your Library matches "${label}" — try a different topic or pick an ebook.` });
   }
 
-  const systemPrompt = `You create a multiple-choice quiz for a PTE Academic student, grounded ONLY in the material below — never invent facts, numbers, or templates that aren't in it. Respond with ONLY a raw JSON array, no markdown code fences, no commentary before or after, in exactly this shape:
-[{"question": "...", "options": ["...","...","...","..."], "answerIndex": 0, "explanation": "under 25 words"}]
-Create exactly ${n} questions focused on: ${label}. Each question needs exactly 4 options with only one correct answer. "answerIndex" is the 0-based index of the correct option.
-Vary what you ask about across the material rather than clustering on one page or one idea, and vary the question style (recall, application, comparison).${buildAvoidBlock(avoid)}
+  const systemPrompt = `You are setting a short practice test for a student preparing for the PTE Academic exam. Ground every question ONLY in the material below — never invent facts, numbers, or templates that aren't in it. Respond with ONLY a raw JSON array, no markdown code fences, no commentary before or after, in exactly this shape:
+[{"question": "...", "options": ["...","...","...","..."], "answerIndex": 0, "explanation": "under 40 words", "sourceId": "S1"}]
 
-LIBRARY MATERIAL (excerpts from the student's own ebooks — each labelled with its book title and page):
+Create exactly ${n} questions focused on: ${label}. Each question needs exactly 4 options with only one correct answer. "answerIndex" is the 0-based index of the correct option.
+
+Because this is exam practice rather than a memory drill:
+- Write questions the way a PTE preparation test would: about task strategy, scoring criteria, timing, and what a response should contain — not trivia about the wording of the book.
+- Make all four options plausible. Wrong options should be the mistakes students actually make, not obvious filler.
+- The explanation must teach, not just assert: say why the right answer is right AND why a tempting wrong one is wrong.
+- Vary what you ask about across the material rather than clustering on one page or one idea, and vary the style (recall, application, comparison).
+
+"sourceId" is REQUIRED: set it to the id of the excerpt below (S1, S2, …) that the question is based on, so the student can go back and read it. Use the id exactly as written.${buildAvoidBlock(avoid)}
+
+LIBRARY MATERIAL — each excerpt is tagged with its id, book title and page:
 ${contextText}${refBlock ? `\n\nADDITIONAL PERSONAL REFERENCE EXCERPTS (paraphrase these in your own words rather than quoting them):\n${refBlock}` : ''}`;
 
   try {
-    const questions = await generateStructuredContent(systemPrompt, `Generate a ${n}-question quiz about: ${label}`);
-    if (!Array.isArray(questions) || !questions.length) {
+    const generated = await generateStructuredContent(systemPrompt, `Set a ${n}-question PTE practice test about: ${label}`);
+    if (!Array.isArray(generated) || !generated.length) {
       return res.status(500).json({ error: 'The model returned no usable questions — try again.' });
     }
-    res.json({ questions: shuffleQuizOptions(questions), topic: label });
+
+    const questions = shuffleQuizOptions(attachSources(generated, sources));
+    res.json({
+      questions,
+      topic: label,
+      // Named so the student can see what the test was drawn from before
+      // they start, the way a real practice paper names its section.
+      books: [...new Set(sources.map(src => src.book))]
+    });
   } catch (err) {
-    res.status(500).json({ error: `Could not generate quiz: ${err.message}` });
+    res.status(500).json({ error: `Could not generate practice test: ${err.message}` });
   }
 });
 
