@@ -8,6 +8,7 @@ const { ROADMAP } = require('./roadmap');
 const storage = require('./storage');
 const reference = require('./reference');
 const library = require('./library');
+const figures = require('./figures');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -428,6 +429,62 @@ app.get('/api/library', (req, res) => {
   });
 });
 
+/**
+ * Decides which pages, if any, are worth pulling figures from.
+ *
+ * Only the top matches count, and only from a single book: a cache miss
+ * means downloading that book from Drive, so spreading across every
+ * loosely-related page would turn one question into several downloads.
+ * Returns null when there's nothing worth trying.
+ */
+const MAX_FIGURE_PAGES = 2;
+
+function figuresForTopMatches(matches) {
+  if (!figures.isEnabled() || !matches || !matches.length) return null;
+
+  // Anchor on the single best match's book so we only ever touch one PDF.
+  const bookId = matches[0].bookId;
+  const bookTitle = matches[0].bookTitle;
+  if (!bookId) return null;
+
+  const pages = [];
+  for (const m of matches) {
+    if (m.bookId !== bookId) continue;
+    if (!pages.includes(m.page)) pages.push(m.page);
+    if (pages.length >= MAX_FIGURE_PAGES) break;
+  }
+  return pages.length ? { bookId, bookTitle, pages } : null;
+}
+
+/**
+ * Attaches figures to the student's most recent message as image parts,
+ * which is how the chat completions API takes images.
+ *
+ * The images ride along with the question rather than the system prompt so
+ * the model treats them as part of what's being asked about. Only the last
+ * user turn is touched; the rest of the conversation is passed through
+ * untouched.
+ */
+function attachMessageImages(messages, attached, bookTitle) {
+  const lastUserIdx = messages.map(m => m.role).lastIndexOf('user');
+  if (lastUserIdx === -1) return messages;
+
+  const original = messages[lastUserIdx];
+  const parts = [{ type: 'text', text: String(original.content || '') }];
+
+  for (const fig of attached) {
+    parts.push({ type: 'text', text: `Figure from ${bookTitle}, page ${fig.page}:` });
+    parts.push({
+      type: 'image_url',
+      image_url: { url: `data:image/png;base64,${fig.base64}`, detail: 'auto' }
+    });
+  }
+
+  const copy = [...messages];
+  copy[lastUserIdx] = { role: 'user', content: parts };
+  return copy;
+}
+
 app.post('/api/chat', async (req, res) => {
   if (!OPENAI_API_KEY) {
     return res.status(500).json({
@@ -448,11 +505,13 @@ app.post('/api/chat', async (req, res) => {
   // ebooks get uploaded.
   let libraryExcerpt = '';
   let libraryItemsUsed = [];
+  let topMatches = [];
   if (!library.isEmpty() && lastUserMessage && lastUserMessage.content) {
     const libMatches = library.search(lastUserMessage.content, 5);
     if (libMatches.length) {
       libraryExcerpt = library.buildExcerptBlock(libMatches, 4000);
       libraryItemsUsed = libMatches.map(m => ({ book: m.bookTitle, page: m.page }));
+      topMatches = libMatches;
     }
   }
 
@@ -474,8 +533,28 @@ app.post('/api/chat', async (req, res) => {
     }
   }
 
+  // If the best-matching passages sit on pages that carry a diagram, pull
+  // those figures out of the source PDF and hand them to the model, so an
+  // explanation of a scoring chart can actually describe the chart rather
+  // than only the prose around it. Restricted to the top couple of pages:
+  // this costs a Drive download on a cache miss, and vision tokens on
+  // every hit, so it is not worth doing for every loosely-related page.
+  const figurePages = figuresForTopMatches(topMatches);
+  let attachedFigures = [];
+  if (figurePages) {
+    attachedFigures = await figures.getFigures(figurePages.bookId, figurePages.pages);
+  }
+
+  const outboundMessages = attachedFigures.length
+    ? attachMessageImages(messages, attachedFigures, figurePages.bookTitle)
+    : messages;
+
+  if (attachedFigures.length) {
+    systemContent += `\n\nOne or more figures from ${figurePages.bookTitle} are attached to the student's message. They are images of diagrams, charts or tables from the pages your Library excerpts came from. Read them and use them when they help answer the question — describe what a chart actually shows rather than talking around it. If an attached figure turns out to be irrelevant to the question, ignore it silently rather than mentioning it.`;
+  }
+
   try {
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    const askOpenAI = (outgoing) => fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -483,12 +562,26 @@ app.post('/api/chat', async (req, res) => {
       },
       body: JSON.stringify({
         model: MODEL,
-        messages: [{ role: 'system', content: systemContent }, ...messages],
+        messages: [{ role: 'system', content: systemContent }, ...outgoing],
         temperature: 0.3
       })
     });
 
-    const data = await openaiRes.json();
+    let openaiRes = await askOpenAI(outboundMessages);
+    let data = await openaiRes.json();
+
+    // A model without vision rejects image parts outright. Rather than
+    // failing the whole answer over a diagram, drop the images and ask
+    // again as plain text.
+    if (!openaiRes.ok && attachedFigures.length) {
+      const why = (data && data.error && data.error.message) || '';
+      if (/image|vision|multimodal|content.*type/i.test(why)) {
+        console.log(`Figures: ${MODEL} rejected image input — retrying without figures. (${why})`);
+        attachedFigures = [];
+        openaiRes = await askOpenAI(messages);
+        data = await openaiRes.json();
+      }
+    }
 
     if (!openaiRes.ok) {
       const message = (data && data.error && data.error.message) || `OpenAI request failed (${openaiRes.status})`;
@@ -499,7 +592,10 @@ app.post('/api/chat', async (req, res) => {
     res.json({
       reply,
       reference: referencePagesUsed.length ? { pages: referencePagesUsed } : null,
-      library: libraryItemsUsed.length ? { items: libraryItemsUsed } : null
+      library: libraryItemsUsed.length ? { items: libraryItemsUsed } : null,
+      figures: attachedFigures.length
+        ? { book: figurePages.bookTitle, pages: [...new Set(attachedFigures.map(f => f.page))] }
+        : null
     });
   } catch (err) {
     res.status(500).json({ error: `Server error contacting OpenAI: ${err.message}` });
