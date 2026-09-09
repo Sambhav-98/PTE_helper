@@ -153,15 +153,59 @@ function searchInBook(bookId, query, topK = 5) {
 }
 
 /**
+ * Draws `count` items from an ordered list of matches, weighted by rank —
+ * the strongest match is the most likely to be picked and the weakest the
+ * least, but every relevant chunk has a real chance of turning up.
+ *
+ * Sampling without replacement, so nothing is drawn twice.
+ */
+function weightedSample(pool, count) {
+  const remaining = pool.map((item, rank) => ({ item, weight: pool.length - rank }));
+  const picked = [];
+  while (picked.length < count && remaining.length) {
+    const total = remaining.reduce((sum, r) => sum + r.weight, 0);
+    let roll = Math.random() * total;
+    let idx = 0;
+    while (idx < remaining.length - 1 && roll >= remaining[idx].weight) {
+      roll -= remaining[idx].weight;
+      idx++;
+    }
+    picked.push(remaining[idx].item);
+    remaining.splice(idx, 1);
+  }
+  return picked;
+}
+
+/**
+ * Search that deliberately doesn't return the same thing twice.
+ *
+ * Plain search() is deterministic — the same topic always yields the same
+ * top-N chunks, so generating a quiz on "Read Aloud" twice fed the model
+ * identical material and produced near-identical questions. This widens
+ * the net to a larger pool of still-relevant matches and randomly draws
+ * from it instead, so the topic stays on target while the specific
+ * passages behind it change every time.
+ *
+ * Scoped to one book when `bookId` is given, otherwise across the library.
+ */
+function searchVaried(query, count = 5, bookId = null, poolFactor = 3) {
+  const chunks = bookId ? (getBook(bookId)?.chunks || []) : allChunks();
+  const pool = reference.searchChunks(query, chunks, count * poolFactor);
+  if (pool.length <= count) return pool;
+  return weightedSample(pool, count);
+}
+
+/**
  * Picks `count` chunks spread across a book (or the whole library, if no
  * bookId is given) rather than matched to a query. This is what backs
  * "generate from this ebook" with no topic typed: there's nothing to
- * search for, so instead we take an evenly-spaced sample so the material
- * comes from across the whole book instead of only its opening pages.
+ * search for, so instead we take a spread so the material comes from
+ * across the whole book instead of only its opening pages.
  *
- * The starting offset is randomised, so pressing Generate again on the
- * same book pulls a different slice and produces a fresh set of cards or
- * questions instead of repeating the last one.
+ * The book is divided into `count` equal bands and one chunk is drawn at
+ * random from within each, so pressing Generate again on the same book
+ * pulls a different slice and produces a fresh set rather than repeating
+ * the last one — while still covering the book end to end.
  */
 function sampleChunks(bookId, count = 4) {
   const pool = bookId ? (getBook(bookId)?.chunks || []) : allChunks();
@@ -169,10 +213,9 @@ function sampleChunks(bookId, count = 4) {
   if (pool.length <= count) return [...pool];
 
   const stride = pool.length / count;
-  const jitter = Math.random() * stride;
   const picked = [];
   for (let i = 0; i < count; i++) {
-    const idx = Math.min(pool.length - 1, Math.floor(i * stride + jitter));
+    const idx = Math.min(pool.length - 1, Math.floor(i * stride + Math.random() * stride));
     picked.push(pool[idx]);
   }
   return picked;
@@ -200,6 +243,7 @@ module.exports = {
   search,
   getBook,
   searchInBook,
+  searchVaried,
   sampleChunks,
   buildExcerptBlock,
   configuredCount,

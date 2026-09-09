@@ -143,14 +143,14 @@ function buildStudyContext(bookId, topic, useReference) {
 
   if (!library.isEmpty()) {
     if (bookId && query) {
-      matches = library.searchInBook(bookId, query, 5);
+      matches = library.searchVaried(query, 5, bookId);
       // Nothing in that book on that topic — fall back to a spread of the
       // book itself rather than jumping to a different source entirely.
       if (!matches.length) matches = library.sampleChunks(bookId, 4);
     } else if (bookId) {
       matches = library.sampleChunks(bookId, 4);
     } else if (query) {
-      matches = library.search(query, 5);
+      matches = library.searchVaried(query, 5);
       if (!matches.length) matches = library.sampleChunks(null, 4);
     }
   }
@@ -180,6 +180,45 @@ function libraryUnavailableReason() {
     return 'Practice sets are generated from your Library, which is currently empty. Add ebooks via LIBRARY_BOOKS on the server, then try again.';
   }
   return null;
+}
+
+/**
+ * Shuffles each question's options and rewrites answerIndex to match.
+ *
+ * Language models overwhelmingly place the correct answer first, so
+ * without this the answer is option A most of the time and the quiz
+ * becomes guessable without reading the material. Questions the model
+ * returned in an unexpected shape are passed through untouched.
+ */
+function shuffleQuizOptions(questions) {
+  return questions.map(q => {
+    if (!Array.isArray(q.options) || q.options.length < 2) return q;
+    if (typeof q.answerIndex !== 'number' || !q.options[q.answerIndex]) return q;
+
+    const correct = q.options[q.answerIndex];
+    const options = [...q.options];
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+    return { ...q, options, answerIndex: options.indexOf(correct) };
+  });
+}
+
+/**
+ * Turns a list of already-seen question texts into a prompt block telling
+ * the model not to reuse them. Material variation alone isn't quite
+ * enough — overlapping excerpts still tempt the model back to the same
+ * few obvious questions — so recent ones are named explicitly.
+ */
+function buildAvoidBlock(avoid) {
+  if (!Array.isArray(avoid)) return '';
+  const recent = avoid
+    .filter(q => typeof q === 'string' && q.trim())
+    .slice(0, 20)
+    .map(q => `- ${q.trim().slice(0, 200)}`);
+  if (!recent.length) return '';
+  return `\n\nThe student has already been asked the following. Do NOT repeat any of them, and do NOT ask a lightly reworded version of them — cover different points from the material instead:\n${recent.join('\n')}`;
 }
 
 /**
@@ -415,7 +454,7 @@ app.post('/api/quiz/generate', async (req, res) => {
   if (!OPENAI_API_KEY) {
     return res.status(500).json({ error: 'The server has no OPENAI_API_KEY configured. Add one to your .env file and restart the server.' });
   }
-  const { bookId, topic, useReference, count } = req.body || {};
+  const { bookId, topic, useReference, count, avoid } = req.body || {};
   if (!bookId && !topic) {
     return res.status(400).json({ error: 'Choose an ebook or enter a topic first.' });
   }
@@ -438,6 +477,7 @@ app.post('/api/quiz/generate', async (req, res) => {
   const systemPrompt = `You create a multiple-choice quiz for a PTE Academic student, grounded ONLY in the material below — never invent facts, numbers, or templates that aren't in it. Respond with ONLY a raw JSON array, no markdown code fences, no commentary before or after, in exactly this shape:
 [{"question": "...", "options": ["...","...","...","..."], "answerIndex": 0, "explanation": "under 25 words"}]
 Create exactly ${n} questions focused on: ${label}. Each question needs exactly 4 options with only one correct answer. "answerIndex" is the 0-based index of the correct option.
+Vary what you ask about across the material rather than clustering on one page or one idea, and vary the question style (recall, application, comparison).${buildAvoidBlock(avoid)}
 
 LIBRARY MATERIAL (excerpts from the student's own ebooks — each labelled with its book title and page):
 ${contextText}${refBlock ? `\n\nADDITIONAL PERSONAL REFERENCE EXCERPTS (paraphrase these in your own words rather than quoting them):\n${refBlock}` : ''}`;
@@ -447,7 +487,7 @@ ${contextText}${refBlock ? `\n\nADDITIONAL PERSONAL REFERENCE EXCERPTS (paraphra
     if (!Array.isArray(questions) || !questions.length) {
       return res.status(500).json({ error: 'The model returned no usable questions — try again.' });
     }
-    res.json({ questions, topic: label });
+    res.json({ questions: shuffleQuizOptions(questions), topic: label });
   } catch (err) {
     res.status(500).json({ error: `Could not generate quiz: ${err.message}` });
   }

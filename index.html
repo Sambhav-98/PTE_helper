@@ -2287,6 +2287,22 @@ const quizArea = document.getElementById('quizArea');
 const quizHistoryList = document.getElementById('quizHistoryList');
 let qzState = { questions: [], topic: '', index: 0, correctCount: 0, answered: false, selected: null, saved: false };
 
+// Questions already served this session, keyed by ebook+topic, so a repeat
+// press of Generate can ask the server for something the student hasn't
+// seen yet. Memory-only and per-tab — it's a nice-to-have, not state worth
+// persisting, and it resets on reload along with everything else.
+const seenQuizQuestions = new Map();
+const SEEN_LIMIT = 20;
+
+function seenKey(bookId, topic){
+  return `${bookId || ''}|${(topic || '').toLowerCase()}`;
+}
+function recordSeenQuestions(key, questions){
+  const prior = seenQuizQuestions.get(key) || [];
+  const merged = [...questions.map(q => q.question).filter(Boolean), ...prior];
+  seenQuizQuestions.set(key, merged.slice(0, SEEN_LIMIT));
+}
+
 document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
   const { bookId, topic } = readTopicSelection('qzSectionSelect', 'qzCustomTopic');
   if(!bookId && !topic){
@@ -2303,7 +2319,7 @@ document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
     const res = await fetch('/api/quiz/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bookId, topic, useReference, count })
+      body: JSON.stringify({ bookId, topic, useReference, count, avoid: seenQuizQuestions.get(seenKey(bookId, topic)) || [] })
     });
     const data = await res.json();
     if(!res.ok){
@@ -2311,6 +2327,7 @@ document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
       btn.disabled = false;
       return;
     }
+    recordSeenQuestions(seenKey(bookId, topic), data.questions);
     qzState = { questions: data.questions, topic: data.topic, index: 0, correctCount: 0, answered: false, selected: null, saved: false };
     renderQuizQuestion();
   }catch(err){
