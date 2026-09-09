@@ -275,8 +275,23 @@ async function getFigures(bookId, pages) {
   }
 }
 
+/**
+ * Fetches one specific figure as raw PNG bytes, for serving over HTTP.
+ *
+ * Reuses the same cache and download path as getFigures, so the image the
+ * student sees is byte-identical to the one the model was given, and a
+ * page that's still cached costs nothing to display.
+ */
+async function getFigureImage(bookId, page, index) {
+  const found = await getFigures(bookId, [page]);
+  const forPage = found.filter(f => f.page === page);
+  const fig = forPage[index] || null;
+  return fig ? Buffer.from(fig.base64, 'base64') : null;
+}
+
 module.exports = {
   getFigures,
+  getFigureImage,
   isEnabled: () => ENABLED,
   // exported for testing
   extractFromBuffer,

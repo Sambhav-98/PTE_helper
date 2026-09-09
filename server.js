@@ -485,6 +485,39 @@ function attachMessageImages(messages, attached, bookTitle) {
   return copy;
 }
 
+/** Position of a figure among the others on its own page. */
+function indexOnPage(list, i) {
+  return list.slice(0, i).filter(f => f.page === list[i].page).length;
+}
+
+// Serves a single figure as a PNG. Same cache and extraction path the chat
+// endpoint uses, so showing the student a figure the model just read is
+// normally free — nothing is downloaded again.
+app.get('/api/library/figure', async (req, res) => {
+  const bookId = String(req.query.book || '');
+  const page = Number(req.query.page);
+  const index = Number(req.query.i) || 0;
+
+  if (!bookId || !Number.isInteger(page) || page < 1) {
+    return res.status(400).json({ error: 'book and page are required.' });
+  }
+  if (!library.getBook(bookId)) {
+    return res.status(404).json({ error: 'Unknown book.' });
+  }
+
+  try {
+    const png = await figures.getFigureImage(bookId, page, index);
+    if (!png) return res.status(404).json({ error: 'No such figure.' });
+    res.set('Content-Type', 'image/png');
+    // Figures are immutable for the life of a given book, so let the
+    // browser keep them rather than re-requesting on every scroll.
+    res.set('Cache-Control', 'private, max-age=86400');
+    res.send(png);
+  } catch (err) {
+    res.status(500).json({ error: `Could not load figure: ${err.message}` });
+  }
+});
+
 app.post('/api/chat', async (req, res) => {
   if (!OPENAI_API_KEY) {
     return res.status(500).json({
@@ -550,7 +583,7 @@ app.post('/api/chat', async (req, res) => {
     : messages;
 
   if (attachedFigures.length) {
-    systemContent += `\n\nOne or more figures from ${figurePages.bookTitle} are attached to the student's message. They are images of diagrams, charts or tables from the pages your Library excerpts came from. Read them and use them when they help answer the question — describe what a chart actually shows rather than talking around it. If an attached figure turns out to be irrelevant to the question, ignore it silently rather than mentioning it.`;
+    systemContent += `\n\nOne or more figures from ${figurePages.bookTitle} are attached to the student's message — images of diagrams, charts or tables from the pages your Library excerpts came from. The student can see these figures displayed alongside your reply, so refer to them directly and by page ("the scoring chart on p.${attachedFigures[0].page} shows…") rather than describing them as if they were invisible. Read what a chart actually shows and use it in your answer instead of talking around it. If an attached figure turns out to be irrelevant to the question, ignore it silently rather than mentioning it.`;
   }
 
   try {
@@ -593,8 +626,19 @@ app.post('/api/chat', async (req, res) => {
       reply,
       reference: referencePagesUsed.length ? { pages: referencePagesUsed } : null,
       library: libraryItemsUsed.length ? { items: libraryItemsUsed } : null,
+      // The figures the model was shown are described here so the client
+      // can display the same ones. Only descriptors travel in the JSON —
+      // the bytes come from the endpoint below, keeping chat replies small.
       figures: attachedFigures.length
-        ? { book: figurePages.bookTitle, pages: [...new Set(attachedFigures.map(f => f.page))] }
+        ? {
+            book: figurePages.bookTitle,
+            items: attachedFigures.map((f, i) => ({
+              page: f.page,
+              width: f.width,
+              height: f.height,
+              url: `/api/library/figure?book=${encodeURIComponent(figurePages.bookId)}&page=${f.page}&i=${indexOnPage(attachedFigures, i)}`
+            }))
+          }
         : null
     });
   } catch (err) {

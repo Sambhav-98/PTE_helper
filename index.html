@@ -400,6 +400,31 @@
   .save-btn.saved{color:var(--accent-teal);border-color:var(--accent-teal);cursor:default;}
   .save-btn svg{width:12px;height:12px;}
 
+  /* Figures pulled from a Library ebook and shown to the model. The
+     student sees exactly what the model was given, so an answer that
+     talks about a chart isn't describing something invisible. */
+  .msg-figures{ display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 4px; }
+  .msg-figure{
+    border:1px solid var(--line); border-radius:10px; overflow:hidden;
+    background:var(--paper-raised); max-width:300px; cursor:zoom-in;
+    transition:border-color .16s var(--ease);
+  }
+  .msg-figure:hover{ border-color:var(--accent-gold); }
+  .msg-figure img{ display:block; width:100%; height:auto; background:#fff; }
+  .msg-figure .fig-cap{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted);
+    padding:6px 9px; border-top:1px solid var(--line);
+  }
+  .msg-figure.failed{ display:none; }
+  /* Lightbox for reading a dense chart at full size. */
+  .fig-lightbox{
+    display:none; position:fixed; inset:0; z-index:120;
+    background:rgba(10,10,9,0.8); align-items:center; justify-content:center; padding:24px;
+    cursor:zoom-out;
+  }
+  .fig-lightbox.open{ display:flex; }
+  .fig-lightbox img{ max-width:100%; max-height:88vh; border-radius:10px; background:#fff; }
+
   .ref-chip{
     font-size:11px;border:1px solid rgba(31,170,92,0.35);background:rgba(31,170,92,0.14);
     border-radius:6px;padding:5px 10px;color:var(--accent-teal);
@@ -1167,6 +1192,8 @@
 
   </div>
 </div>
+
+<div class="fig-lightbox" id="figLightbox"><img id="figLightboxImg" alt=""></div>
 
 <!-- WELCOME SPLASH — shown once (localStorage-gated), always skippable -->
 <div class="welcome-overlay" id="welcomeOverlay">
@@ -2553,7 +2580,23 @@ function renderMarkdown(text){
   return out || `<p>${html}</p>`;
 }
 
-function addMessage(role, content, referenceInfo, libraryInfo){
+const figLightbox = document.getElementById('figLightbox');
+const figLightboxImg = document.getElementById('figLightboxImg');
+function openFigLightbox(src, alt){
+  figLightboxImg.src = src;
+  figLightboxImg.alt = alt || '';
+  figLightbox.classList.add('open');
+}
+function closeFigLightbox(){
+  figLightbox.classList.remove('open');
+  figLightboxImg.src = '';
+}
+figLightbox.addEventListener('click', closeFigLightbox);
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && figLightbox.classList.contains('open')) closeFigLightbox();
+});
+
+function addMessage(role, content, referenceInfo, libraryInfo, figureInfo){
   if(heroBlock) heroBlock.style.display = 'none';
   if(newChatBtn) newChatBtn.style.display = 'flex';
   const msg = document.createElement('div');
@@ -2572,6 +2615,33 @@ function addMessage(role, content, referenceInfo, libraryInfo){
   msg.appendChild(bubble);
 
   if(role === 'assistant'){
+    // Show the figures the model was given, so a reply that discusses a
+    // chart isn't describing something the student can't see.
+    if(figureInfo && figureInfo.items && figureInfo.items.length){
+      const wrap = document.createElement('div');
+      wrap.className = 'msg-figures';
+      figureInfo.items.forEach(fig => {
+        const box = document.createElement('figure');
+        box.className = 'msg-figure';
+        box.style.margin = '0';
+        const img = document.createElement('img');
+        img.loading = 'lazy';
+        img.alt = `Figure from ${figureInfo.book}, page ${fig.page}`;
+        img.src = fig.url;
+        // If the page has been evicted from the server's cache and can't be
+        // re-fetched, hide the frame rather than leaving a broken image.
+        img.addEventListener('error', () => box.classList.add('failed'));
+        box.appendChild(img);
+        const cap = document.createElement('figcaption');
+        cap.className = 'fig-cap';
+        cap.textContent = `${figureInfo.book} · p. ${fig.page}`;
+        box.appendChild(cap);
+        box.addEventListener('click', () => openFigLightbox(img.src, img.alt));
+        wrap.appendChild(box);
+      });
+      bubble.appendChild(wrap);
+    }
+
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
 
@@ -2665,7 +2735,7 @@ async function sendMessage(){
     }
 
     messages.push({role:'assistant', content: data.reply});
-    addMessage('assistant', data.reply, data.reference, data.library);
+    addMessage('assistant', data.reply, data.reference, data.library, data.figures);
   }catch(err){
     removeThinking();
     addMessage('assistant', `**Connection error:** ${err.message}. Is the server running?`);
