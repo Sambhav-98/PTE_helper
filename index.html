@@ -23,6 +23,7 @@
     --safe-b: env(safe-area-inset-bottom, 0px);
     --safe-t: env(safe-area-inset-top, 0px);
   }
+  html{color-scheme:dark;}
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;height:100%;}
   body{
@@ -50,6 +51,11 @@
     height:100dvh;
     min-height:560px;
     transition:grid-template-columns .28s var(--ease);
+  }
+  /* A landscape phone is shorter than the 560px floor above, which would
+     otherwise push the composer off-screen behind a whole-page scroll. */
+  @media (max-height:560px){
+    .app{min-height:0;}
   }
   @media (min-width:881px){
     .app.left-collapsed{grid-template-columns: 0px 1fr 320px;}
@@ -91,7 +97,7 @@
     flex-shrink:0;
     transition:background .16s var(--ease), border-color .16s var(--ease), transform .16s var(--ease);
   }
-  .icon-btn:hover{background:var(--paper-raised);border-color:var(--accent-teal);}
+  .icon-btn:hover{background:rgba(31,170,92,0.14);border-color:var(--accent-teal);color:var(--accent-teal);}
   .icon-btn:active{transform:scale(0.94);}
   .icon-btn svg{width:17px;height:17px;}
   .icon-btn.always-visible{display:flex;}
@@ -207,7 +213,7 @@
   .library-upload-status.loading{ color:var(--accent-teal); }
   .lib-spinner{
     width:11px;height:11px;border-radius:50%;flex-shrink:0;
-    border:2px solid rgba(0,89,46,0.25); border-top-color:var(--accent-teal);
+    border:2px solid rgba(31,170,92,0.25); border-top-color:var(--accent-teal);
     animation:libSpin .7s linear infinite;
   }
   @keyframes libSpin{ to{ transform:rotate(360deg); } }
@@ -224,7 +230,7 @@
     display:inline-flex; align-items:center; gap:5px;
     font-family:'IBM Plex Mono', monospace; font-size:10.5px;
     padding:4px 8px; border-radius:999px;
-    background:rgba(0,89,46,0.1); color:var(--accent-teal);
+    background:rgba(31,170,92,0.16); color:var(--accent-teal);
     margin-right:6px;
   }
   .lib-chip svg{ width:12px; height:12px; }
@@ -241,7 +247,7 @@
     font-family:inherit; font-size:12.5px; outline:none;
     transition:border-color .16s var(--ease), box-shadow .16s var(--ease);
   }
-  .section-search-input:focus{ border-color:var(--accent-teal); box-shadow:0 0 0 3px rgba(0,89,46,0.12); }
+  .section-search-input:focus{ border-color:var(--accent-teal); box-shadow:0 0 0 3px rgba(31,170,92,0.18); }
   .source-list{list-style:none;margin:0;padding:0;}
   .source-list li{
     font-size:13px;
@@ -276,7 +282,7 @@
     transform:translateX(-3px); transition:opacity .16s var(--ease), transform .16s var(--ease);
   }
   .source-list li:hover .sarrow{opacity:1;transform:translateX(0);}
-  .source-list li.active{background:rgba(0,89,46,0.1);border-color:rgba(0,89,46,0.3);color:var(--accent-teal);font-weight:600;}
+  .source-list li.active{background:rgba(31,170,92,0.16);border-color:rgba(31,170,92,0.35);color:var(--accent-teal);font-weight:600;}
   .source-list li.active .snum{background:var(--accent-teal);color:#fff;}
   .section-empty{font-size:12px;color:var(--muted);text-align:center;padding:18px 8px;}
 
@@ -369,7 +375,7 @@
   .msg .bubble ul,.msg .bubble ol{margin:6px 0 10px;padding-left:20px;}
   .msg .bubble strong{color:var(--ink);}
   .msg .bubble code{
-    background:rgba(10,10,9,0.06);
+    background:rgba(237,235,230,0.09);
     padding:1px 5px;border-radius:4px;
     font-family:'IBM Plex Mono',monospace;font-size:12.5px;
   }
@@ -395,7 +401,7 @@
   .save-btn svg{width:12px;height:12px;}
 
   .ref-chip{
-    font-size:11px;border:1px solid rgba(0,89,46,0.3);background:rgba(0,89,46,0.08);
+    font-size:11px;border:1px solid rgba(31,170,92,0.35);background:rgba(31,170,92,0.14);
     border-radius:6px;padding:5px 10px;color:var(--accent-teal);
     display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
   }
@@ -427,8 +433,9 @@
     display:flex;align-items:center;justify-content:center;
     flex-shrink:0;transition:background .12s ease;
   }
-  .send-btn:hover{background:#00934B;}
-  .send-btn:disabled{background:#B7B2A4;cursor:not-allowed;}
+  .send-btn svg{width:17px;height:17px;}
+  .send-btn:hover{background:#37C273;}
+  .send-btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
   .composer-note{
     max-width:720px;margin:8px auto 0;font-size:11px;color:var(--muted);text-align:center;
   }
@@ -519,7 +526,7 @@
     width:100%;padding:9px;border-radius:7px;border:none;background:var(--accent-teal);color:#fff;
     font-size:12.5px;font-weight:500;cursor:pointer;
   }
-  .notebook-add button:hover{background:#00934B;}
+  .notebook-add button:hover{background:#37C273;}
   .note-card{border:1px solid var(--line);border-radius:10px;padding:10px 30px 10px 11px;margin-bottom:9px;background:var(--paper);position:relative;cursor:pointer;transition:border-color .16s var(--ease);}
   .note-card:hover{border-color:var(--accent-gold);}
   .note-card .note-title-row{display:flex;align-items:flex-start;gap:6px;}
@@ -562,7 +569,7 @@
   .cal-backdrop.open{display:flex;opacity:1;pointer-events:auto;}
   .cal-modal{
     background:var(--paper-raised);border-radius:16px;
-    width:min(720px, 100%);max-height:88vh;overflow:hidden;
+    width:min(720px, 100%);max-height:min(88vh, calc(100dvh - 40px));overflow:hidden;
     display:flex;flex-direction:column;
     box-shadow:0 20px 60px rgba(10,10,9,0.3);
   }
@@ -672,8 +679,8 @@
     flex-basis:100%;padding:10px;border-radius:8px;border:none;background:var(--accent-teal);color:#fff;
     font-size:13px;font-weight:500;cursor:pointer;
   }
-  .practice-generate-btn:hover{background:#00934B;}
-  .practice-generate-btn:disabled{background:#B7B2A4;cursor:not-allowed;}
+  .practice-generate-btn:hover{background:#37C273;}
+  .practice-generate-btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
   .practice-empty{
     font-size:12.5px;color:var(--muted);text-align:center;padding:36px 16px;
     border:1px dashed var(--line);border-radius:10px;
@@ -687,7 +694,7 @@
     display:flex;flex-direction:column;align-items:center;gap:10px;
   }
 
-  /* Flashcard flip wer */
+  /* Flashcard flip viewer */
   .flashcard{perspective:1200px;height:170px;margin-bottom:14px;cursor:pointer;}
   .flashcard-inner{
     position:relative;width:100%;height:100%;transition:transform .5s;
@@ -718,10 +725,10 @@
   .flashcard-counter{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);}
   .deck-save-btn{
     width:100%;padding:9px;border-radius:8px;border:1px solid var(--accent-teal);
-    background:rgba(0,89,46,0.08);color:var(--accent-teal);font-size:12.5px;font-weight:500;
+    background:rgba(31,170,92,0.14);color:var(--accent-teal);font-size:12.5px;font-weight:500;
     cursor:pointer;margin-bottom:6px;
   }
-  .deck-save-btn:hover{background:rgba(0,89,46,0.15);}
+  .deck-save-btn:hover{background:rgba(31,170,92,0.22);}
   .deck-save-btn.saved{cursor:default;opacity:0.7;}
 
   .deck-item, .quiz-history-item{
@@ -739,8 +746,8 @@
     font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
     padding:3px 8px;border-radius:6px;flex-shrink:0;
   }
-  .quiz-score-badge.good{background:rgba(0,89,46,0.12);color:var(--accent-teal);}
-  .quiz-score-badge.mid{background:rgba(112,105,52,0.15);color:var(--accent-gold);}
+  .quiz-score-badge.good{background:rgba(31,170,92,0.18);color:var(--accent-teal);}
+  .quiz-score-badge.mid{background:rgba(196,168,62,0.20);color:var(--accent-gold);}
   .quiz-score-badge.low{background:rgba(193,68,58,0.1);color:var(--accent-red);}
 
   /* Quiz runner */
@@ -752,7 +759,7 @@
     font-size:13px;cursor:pointer;color:var(--ink);transition:border-color .12s ease;
   }
   .quiz-option:hover{border-color:var(--accent-gold);}
-  .quiz-option.correct{border-color:var(--accent-teal);background:rgba(0,89,46,0.1);font-weight:500;}
+  .quiz-option.correct{border-color:var(--accent-teal);background:rgba(31,170,92,0.16);font-weight:500;}
   .quiz-option.incorrect{border-color:var(--accent-red);background:rgba(193,68,58,0.08);}
   .quiz-option:disabled{cursor:default;}
   .quiz-explanation{
@@ -763,7 +770,7 @@
     width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent-teal);color:#fff;
     font-size:13px;font-weight:500;cursor:pointer;
   }
-  .quiz-next-btn:hover{background:#00934B;}
+  .quiz-next-btn:hover{background:#37C273;}
   .quiz-result{text-align:center;padding:20px 10px;}
   .quiz-result .score-big{
     font-family:'Source Serif 4',serif;font-weight:700;font-size:34px;margin-bottom:4px;
@@ -773,11 +780,13 @@
   .quiz-result-actions button{
     flex:1;padding:9px;border-radius:8px;font-size:12.5px;cursor:pointer;
   }
-  .quiz-save-result-btn{border:1px solid var(--accent-teal);background:rgba(0,89,46,0.08);color:var(--accent-teal);}
+  .quiz-save-result-btn{border:1px solid var(--accent-teal);background:rgba(31,170,92,0.14);color:var(--accent-teal);}
   .quiz-retry-btn{border:1px solid var(--line);background:var(--paper-raised);color:var(--ink);}
 
-  ::-webkit-scrollbar{width:8px;}
-  ::-webkit-scrollbar-thumb{background:#D8D4C8;border-radius:8px;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#4A4A45;border-radius:8px;}
+  ::-webkit-scrollbar-thumb:hover{background:#5C5C56;}
 
   /* ---------------------------------------------------------
      MOBILE / TABLET LAYOUT
@@ -847,8 +856,8 @@
   .welcome-overlay{
     display:none; position:fixed; inset:0; z-index:100;
     align-items:center; justify-content:center; padding:24px;
-    background:radial-gradient(circle at 30% 20%, rgba(0,89,46,0.08), transparent 55%),
-               radial-gradient(circle at 80% 80%, rgba(112,105,52,0.08), transparent 55%),
+    background:radial-gradient(circle at 30% 20%, rgba(31,170,92,0.14), transparent 55%),
+               radial-gradient(circle at 80% 80%, rgba(196,168,62,0.10), transparent 55%),
                var(--paper);
   }
   .welcome-overlay.open{display:flex;}
@@ -884,7 +893,7 @@
   }
   .tour-spotlight{
     position:fixed; border-radius:14px; border:3px solid var(--accent-gold);
-    box-shadow:0 0 0 6px rgba(112,105,52,0.22), 0 10px 30px rgba(0,0,0,0.3);
+    box-shadow:0 0 0 6px rgba(196,168,62,0.28), 0 10px 30px rgba(0,0,0,0.3);
     transition:top .38s var(--ease), left .38s var(--ease), width .38s var(--ease), height .38s var(--ease), opacity .2s var(--ease);
     pointer-events:none; opacity:1;
   }
@@ -923,17 +932,17 @@
     transition:background .16s var(--ease), border-color .16s var(--ease);
   }
   .tour-nav-btn.primary{background:var(--accent-teal); color:#fff; border:1px solid var(--accent-teal);}
-  .tour-nav-btn.primary:hover{background:#00934B;}
+  .tour-nav-btn.primary:hover{background:#37C273;}
   .tour-nav-btn.ghost{background:none; color:var(--muted); border:1px solid var(--line);}
   .tour-nav-btn.ghost:hover{color:var(--ink); border-color:var(--accent-gold);}
   .tour-nav-btn:disabled{opacity:0.4; cursor:default; pointer-events:none;}
   .tour-demo-msg .bubble{
-    border-left:3px solid var(--accent-gold); background:rgba(112,105,52,0.06);
+    border-left:3px solid var(--accent-gold); background:rgba(196,168,62,0.10);
     border-radius:8px; padding:9px 9px 9px 12px;
   }
   .tour-demo-badge{
     display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.05em;
-    text-transform:uppercase; color:var(--accent-gold); background:rgba(112,105,52,0.14);
+    text-transform:uppercase; color:var(--accent-gold); background:rgba(196,168,62,0.20);
     padding:2px 7px; border-radius:999px; margin-bottom:7px;
   }
   @media (max-width:600px){
@@ -948,22 +957,22 @@
   <div class="topbar">
     <div class="topbar-left">
       <button class="icon-btn sidebar-toggle" id="openSources" aria-label="Toggle sources panel" aria-expanded="true">
-        <svg wBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/></svg>
       </button>
-      <div class="brand"><div class="mark">PTE</div><span class="brand-text">PTE Prep Hub </span></div>
+      <div class="brand"><div class="mark">PTE</div><span class="brand-text">PTE Prep Hub</span></div>
     </div>
     <div class="topbar-right">
       <div class="status-pill" id="apiStatus" title="Checking server…">
         <span class="status-dot"></span>
       </div>
       <button class="icon-btn always-visible" id="openPractice" aria-label="Open practice: flashcards and quiz">
-        <svg wBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 21h9a2 2 0 0 0 2-2V9"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 21h9a2 2 0 0 0 2-2V9"/></svg>
       </button>
       <button class="icon-btn always-visible" id="openTour" aria-label="Take the tour">
-        <svg wBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </button>
       <button class="icon-btn sidebar-toggle" id="openStudio" aria-label="Toggle studio panel" aria-expanded="true">
-        <svg wBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="14" y1="4" x2="14" y2="20"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="14" y1="4" x2="14" y2="20"/></svg>
       </button>
     </div>
   </div>
@@ -972,12 +981,12 @@
 
   <div class="panel panel-left" id="panelLeft">
     <button class="sidebar-pin" id="pinSources" aria-label="Keep sources panel open" aria-pressed="false" title="Keep this panel open">
-      <svg wBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/></svg>
     </button>
     <div class="panel-mobile-header">
       <span class="title">Sources</span>
       <button class="icon-btn" id="closeSources" aria-label="Close sources" style="display:flex;">
-        <svg wBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
       </button>
     </div>
     <div class="panel-title">Library</div>
@@ -990,7 +999,7 @@
 
     <div class="panel-title" style="margin-top:18px;">Handbook Sections</div>
     <div class="section-search-wrap">
-      <svg class="section-search-icon" wBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <svg class="section-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="sectionSearchInput" class="section-search-input" placeholder="Filter sections…">
     </div>
     <ul class="source-list" id="sourceList"></ul>
@@ -1004,7 +1013,7 @@
     </button>
     <div class="chat-scroll" id="chatScroll">
       <div class="hero" id="heroBlock">
-        <h1> PTE guidance tool.</h1>
+        <h1>Your PTE guidance tool.</h1>
         <p>Ask anything about the exam and get answers grounded first in your Library ebooks, falling back to the built-in PTE Academic handbook for anything not yet covered. Save any answer to your Notebook, or open the Roadmap for a step-by-step study plan.</p>
         <div class="chip-row" id="chipRow"></div>
       </div>
@@ -1012,7 +1021,9 @@
     <div class="composer">
       <div class="composer-inner">
         <textarea id="composerInput" rows="1" placeholder="Ask about scoring, a task type, or a strategy…"></textarea>
-        <button class="send-btn" id="sendBtn" aria-label="Send">➤</button>
+        <button class="send-btn" id="sendBtn" aria-label="Send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
       </div>
       <div class="composer-note">Answers come from OpenAI via this app's own server, grounded in your Library and the handbook.</div>
     </div>
@@ -1118,7 +1129,7 @@
         </div>
 
         <div id="flashcardArea">
-          <div class="practice-empty">Choose a section (or type a topic), then generate a set to begin.</div>
+          <div class="practice-empty">Choose an ebook (or type a topic), then generate a set to begin.</div>
         </div>
 
         <div class="panel-title" style="margin-top:18px;">My saved decks</div>
@@ -1141,7 +1152,7 @@
         </div>
 
         <div id="quizArea">
-          <div class="practice-empty">Choose a section (or type a topic), then generate a quiz to begin.</div>
+          <div class="practice-empty">Choose an ebook (or type a topic), then generate a quiz to begin.</div>
         </div>
 
         <div class="panel-title" style="margin-top:18px;">Past attempts</div>
@@ -1464,7 +1475,6 @@ async function loadSources(){
     sourceTitles = list.map(s => s.title);
     allSections = list;
     renderSourceList(list.map((s, i) => ({ ...s, origIndex: i })));
-    populateSectionSelects();
   }catch(err){
     // Sources panel is non-critical; fail silently if the server isn't reachable yet.
   }
@@ -1486,6 +1496,9 @@ const libraryUploadStatus = document.getElementById('libraryUploadStatus');
 const libraryList = document.getElementById('libraryList');
 const libraryEmptyCard = document.getElementById('libraryEmptyCard');
 let libraryPollTimer = null;
+// Books currently loaded on the server. Drives the Practice tab's ebook
+// dropdowns, so it's declared here — above loadLibrary(), which assigns it.
+let libraryBooks = [];
 
 async function loadLibrary(){
   try{
@@ -1512,6 +1525,9 @@ async function loadLibrary(){
     } else {
       libraryUploadStatus.textContent = '';
     }
+
+    libraryBooks = books;
+    populateSectionSelects();
 
     books.forEach(b => {
       const li = document.createElement('li');
@@ -2013,21 +2029,50 @@ loadTasks().then(initCalendar);
 --------------------------------------------------------- */
 const practiceBackdrop = document.getElementById('practiceBackdrop');
 
+// Practice material comes from the Library (the uploaded ebooks), not the
+// built-in handbook — so these dropdowns list books, and are refreshed by
+// loadLibrary() as books finish parsing rather than filled once at startup.
 function populateSectionSelects(){
   [document.getElementById('fcSectionSelect'), document.getElementById('qzSectionSelect')].forEach(sel => {
-    if(!sel || sel.dataset.populated) return;
-    sel.innerHTML = '<option value="">Choose a section…</option>';
-    sourceTitles.forEach(title => {
+    if(!sel) return;
+    const previous = sel.value;
+    sel.innerHTML = libraryBooks.length
+      ? '<option value="">Choose an ebook…</option>'
+      : '<option value="">No ebooks in your Library yet</option>';
+    libraryBooks.forEach(book => {
       const opt = document.createElement('option');
-      opt.value = title;
-      opt.textContent = title;
+      opt.value = book.id;
+      opt.textContent = book.title;
       sel.appendChild(opt);
     });
-    const customOpt = document.createElement('option');
-    customOpt.value = '__custom__';
-    customOpt.textContent = 'Custom topic…';
-    sel.appendChild(customOpt);
-    sel.dataset.populated = '1';
+    if(libraryBooks.length){
+      const customOpt = document.createElement('option');
+      customOpt.value = '__custom__';
+      customOpt.textContent = 'Custom topic…';
+      sel.appendChild(customOpt);
+    }
+    // Keep whatever the student had already picked if it still exists.
+    if(previous && [...sel.options].some(o => o.value === previous)) sel.value = previous;
+  });
+  updatePracticeAvailability();
+}
+
+// With an empty Library there is nothing to generate from, so say that
+// plainly in the modal instead of letting Generate fail on every press.
+function updatePracticeAvailability(){
+  const ready = libraryBooks.length > 0;
+  ['fcGenerateBtn', 'qzGenerateBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if(btn) btn.disabled = !ready;
+  });
+  const emptyMsg = 'Your Library is empty — add ebooks via LIBRARY_BOOKS on the server to generate practice sets.';
+  const readyMsg = 'Choose an ebook (or type a topic), then generate to begin.';
+  ['flashcardArea', 'quizArea'].forEach(id => {
+    const area = document.getElementById(id);
+    // A generated set replaces the placeholder entirely, so its presence is
+    // the signal that nothing is in progress and this is safe to rewrite.
+    const placeholder = area && area.querySelector('.practice-empty');
+    if(placeholder) placeholder.textContent = ready ? readyMsg : emptyMsg;
   });
 }
 
@@ -2046,9 +2091,10 @@ function readTopicSelection(selectId, inputId){
   const sel = document.getElementById(selectId);
   const input = document.getElementById(inputId);
   if(sel.value === '__custom__'){
-    return { sectionTitle: null, topic: input.value.trim() };
+    // A typed topic searches across every ebook in the Library.
+    return { bookId: null, topic: input.value.trim() };
   }
-  return { sectionTitle: sel.value || null, topic: null };
+  return { bookId: sel.value || null, topic: null };
 }
 
 function openPractice(){
@@ -2059,8 +2105,19 @@ function openPractice(){
 }
 function closePractice(){
   practiceBackdrop.classList.remove('open');
-  document.body.classList.remove('drawer-open');
+  // A mobile drawer can still be open underneath, and it needs the scroll
+  // lock too — only release it if nothing else is holding it.
+  if(!panelLeft.classList.contains('open') && !panelRight.classList.contains('open')){
+    document.body.classList.remove('drawer-open');
+  }
 }
+
+// Escape closes whatever's on top, innermost first.
+document.addEventListener('keydown', (e) => {
+  if(e.key !== 'Escape') return;
+  if(practiceBackdrop.classList.contains('open')){ closePractice(); return; }
+  if(panelLeft.classList.contains('open') || panelRight.classList.contains('open')) closeDrawers();
+});
 document.getElementById('openPractice').addEventListener('click', openPractice);
 document.getElementById('closePractice').addEventListener('click', closePractice);
 practiceBackdrop.addEventListener('click', (e) => { if(e.target === practiceBackdrop) closePractice(); });
@@ -2082,9 +2139,9 @@ const deckList = document.getElementById('deckList');
 let fcState = { cards: [], topic: '', index: 0, deckId: null };
 
 document.getElementById('fcGenerateBtn').addEventListener('click', async () => {
-  const { sectionTitle, topic } = readTopicSelection('fcSectionSelect', 'fcCustomTopic');
-  if(!sectionTitle && !topic){
-    flashcardArea.innerHTML = '<div class="practice-error">Choose a section or type a topic first.</div>';
+  const { bookId, topic } = readTopicSelection('fcSectionSelect', 'fcCustomTopic');
+  if(!bookId && !topic){
+    flashcardArea.innerHTML = '<div class="practice-error">Choose an ebook or type a topic first.</div>';
     return;
   }
   const useReference = document.getElementById('fcUseReference').checked;
@@ -2096,7 +2153,7 @@ document.getElementById('fcGenerateBtn').addEventListener('click', async () => {
     const res = await fetch('/api/flashcards/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sectionTitle, topic, useReference })
+      body: JSON.stringify({ bookId, topic, useReference })
     });
     const data = await res.json();
     if(!res.ok){
@@ -2114,7 +2171,7 @@ document.getElementById('fcGenerateBtn').addEventListener('click', async () => {
 
 function renderFlashcardViewer(){
   if(!fcState.cards.length){
-    flashcardArea.innerHTML = '<div class="practice-empty">Choose a section (or type a topic), then generate a set to begin.</div>';
+    flashcardArea.innerHTML = '<div class="practice-empty">Choose an ebook (or type a topic), then generate a set to begin.</div>';
     return;
   }
   const card = fcState.cards[fcState.index];
@@ -2231,9 +2288,9 @@ const quizHistoryList = document.getElementById('quizHistoryList');
 let qzState = { questions: [], topic: '', index: 0, correctCount: 0, answered: false, selected: null, saved: false };
 
 document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
-  const { sectionTitle, topic } = readTopicSelection('qzSectionSelect', 'qzCustomTopic');
-  if(!sectionTitle && !topic){
-    quizArea.innerHTML = '<div class="practice-error">Choose a section or type a topic first.</div>';
+  const { bookId, topic } = readTopicSelection('qzSectionSelect', 'qzCustomTopic');
+  if(!bookId && !topic){
+    quizArea.innerHTML = '<div class="practice-error">Choose an ebook or type a topic first.</div>';
     return;
   }
   const useReference = document.getElementById('qzUseReference').checked;
@@ -2246,7 +2303,7 @@ document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
     const res = await fetch('/api/quiz/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sectionTitle, topic, useReference, count })
+      body: JSON.stringify({ bookId, topic, useReference, count })
     });
     const data = await res.json();
     if(!res.ok){
@@ -2264,7 +2321,7 @@ document.getElementById('qzGenerateBtn').addEventListener('click', async () => {
 
 function renderQuizQuestion(){
   if(!qzState.questions.length){
-    quizArea.innerHTML = '<div class="practice-empty">Choose a section (or type a topic), then generate a quiz to begin.</div>';
+    quizArea.innerHTML = '<div class="practice-empty">Choose an ebook (or type a topic), then generate a quiz to begin.</div>';
     return;
   }
   const q = qzState.questions[qzState.index];
@@ -2720,7 +2777,7 @@ const TOUR_STEPS = [
   },
   {
     title: 'Practice on demand.',
-    body: 'Generate flashcards or a quiz from any topic or handbook section, whenever you want to test yourself.',
+    body: 'Generate flashcards or a quiz straight from your Library ebooks — any book, or any topic across all of them.',
     target: 'openPractice'
   },
   {

@@ -123,42 +123,63 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
- * Builds grounding material for flashcard/quiz generation: the full text
- * of a chosen handbook section (falling back to the whole handbook if no
- * section is picked), plus optional short reference excerpts — the same
- * excerpt search and 700-character cap used by chat, so generated study
- * material stays just as grounded and just as light on any personal
- * reference content.
+ * Builds grounding material for flashcard/quiz generation. This draws from
+ * the Library (the institution's own uploaded ebooks) ONLY — the built-in
+ * handbook in knowledge.js is deliberately not used here, so practice
+ * material always reflects what the students are actually studying from.
+ *
+ * Three cases, all capped the same way chat is so cost stays flat:
+ *   - a book + a topic  → keyword search inside that one book
+ *   - a book, no topic  → an evenly-spaced sample from across that book
+ *   - a topic, no book  → keyword search across the whole library
+ *
+ * Returns `contextText: ''` when the Library has nothing to offer; callers
+ * turn that into a clear message rather than silently generating from
+ * somewhere else.
  */
-function buildStudyContext(sectionTitle, topic, useReference) {
-  const label = (topic && topic.trim()) || sectionTitle || '';
-  let contextText = '';
+function buildStudyContext(bookId, topic, useReference) {
+  const query = (topic || '').trim();
+  let matches = [];
 
-  // Library first: search the uploaded ebooks for chunks matching the
-  // chosen topic/section, capped just like chat — not the whole library.
-  if (!library.isEmpty() && label) {
-    const libMatches = library.search(label, 4);
-    if (libMatches.length) contextText = library.buildExcerptBlock(libMatches, 3500);
+  if (!library.isEmpty()) {
+    if (bookId && query) {
+      matches = library.searchInBook(bookId, query, 5);
+      // Nothing in that book on that topic — fall back to a spread of the
+      // book itself rather than jumping to a different source entirely.
+      if (!matches.length) matches = library.sampleChunks(bookId, 4);
+    } else if (bookId) {
+      matches = library.sampleChunks(bookId, 4);
+    } else if (query) {
+      matches = library.search(query, 5);
+      if (!matches.length) matches = library.sampleChunks(null, 4);
+    }
   }
 
-  // Handbook fallback — used whenever the library is empty or has nothing
-  // relevant to this particular topic.
-  if (!contextText && sectionTitle) {
-    const section = SOURCES.find(s => s.title === sectionTitle);
-    if (section) contextText = `## ${section.title}\n${section.content.trim()}`;
-  }
-  if (!contextText) {
-    contextText = SOURCES.map(s => `## ${s.title}\n${s.content.trim()}`).join('\n\n');
-  }
+  const contextText = matches.length ? library.buildExcerptBlock(matches, 3500) : '';
 
   let refBlock = '';
-  const query = (topic || sectionTitle || '').trim();
   if (useReference && referenceReady && referenceChunks.length && query) {
-    const matches = reference.searchChunks(query, referenceChunks, 2);
-    if (matches.length) refBlock = reference.buildExcerptBlock(matches, 700);
+    const refMatches = reference.searchChunks(query, referenceChunks, 2);
+    if (refMatches.length) refBlock = reference.buildExcerptBlock(refMatches, 700);
   }
 
   return { contextText, refBlock };
+}
+
+/**
+ * Shared guard for both generate endpoints: the Library is the only source
+ * for practice material now, so a missing/empty/still-loading library is an
+ * explicit, explainable state rather than a silent fallback. Returns an
+ * error string, or null when it's fine to proceed.
+ */
+function libraryUnavailableReason() {
+  if (library.isLoading()) {
+    return 'Your Library is still loading — give it a moment and try again.';
+  }
+  if (library.isEmpty()) {
+    return 'Practice sets are generated from your Library, which is currently empty. Add ebooks via LIBRARY_BOOKS on the server, then try again.';
+  }
+  return null;
 }
 
 /**
@@ -310,19 +331,30 @@ app.post('/api/flashcards/generate', async (req, res) => {
   if (!OPENAI_API_KEY) {
     return res.status(500).json({ error: 'The server has no OPENAI_API_KEY configured. Add one to your .env file and restart the server.' });
   }
-  const { sectionTitle, topic, useReference } = req.body || {};
-  if (!sectionTitle && !topic) {
-    return res.status(400).json({ error: 'Choose a section or enter a topic first.' });
+  const { bookId, topic, useReference } = req.body || {};
+  if (!bookId && !topic) {
+    return res.status(400).json({ error: 'Choose an ebook or enter a topic first.' });
   }
 
-  const label = (topic && topic.trim()) || sectionTitle;
-  const { contextText, refBlock } = buildStudyContext(sectionTitle, topic, useReference);
+  const unavailable = libraryUnavailableReason();
+  if (unavailable) return res.status(400).json({ error: unavailable });
+
+  const book = bookId ? library.getBook(bookId) : null;
+  if (bookId && !book) {
+    return res.status(400).json({ error: 'That ebook is no longer loaded — reload the page and pick again.' });
+  }
+
+  const label = (topic && topic.trim()) || (book && book.title) || '';
+  const { contextText, refBlock } = buildStudyContext(bookId, topic, useReference);
+  if (!contextText) {
+    return res.status(400).json({ error: `Nothing in your Library matches "${label}" — try a different topic or pick an ebook.` });
+  }
 
   const systemPrompt = `You create study flashcards for a PTE Academic student, grounded ONLY in the material below — never invent facts, numbers, or templates that aren't in it. Respond with ONLY a raw JSON array, no markdown code fences, no commentary before or after, in exactly this shape:
 [{"front": "short question or term (under 15 words)", "back": "concise direct answer (under 35 words)"}]
 Create between 6 and 10 cards focused on: ${label}
 
-MATERIAL:
+LIBRARY MATERIAL (excerpts from the student's own ebooks — each labelled with its book title and page):
 ${contextText}${refBlock ? `\n\nADDITIONAL PERSONAL REFERENCE EXCERPTS (paraphrase these in your own words rather than quoting them):\n${refBlock}` : ''}`;
 
   try {
@@ -383,20 +415,31 @@ app.post('/api/quiz/generate', async (req, res) => {
   if (!OPENAI_API_KEY) {
     return res.status(500).json({ error: 'The server has no OPENAI_API_KEY configured. Add one to your .env file and restart the server.' });
   }
-  const { sectionTitle, topic, useReference, count } = req.body || {};
-  if (!sectionTitle && !topic) {
-    return res.status(400).json({ error: 'Choose a section or enter a topic first.' });
+  const { bookId, topic, useReference, count } = req.body || {};
+  if (!bookId && !topic) {
+    return res.status(400).json({ error: 'Choose an ebook or enter a topic first.' });
   }
   const n = [5, 8, 10].includes(Number(count)) ? Number(count) : 5;
 
-  const label = (topic && topic.trim()) || sectionTitle;
-  const { contextText, refBlock } = buildStudyContext(sectionTitle, topic, useReference);
+  const unavailable = libraryUnavailableReason();
+  if (unavailable) return res.status(400).json({ error: unavailable });
+
+  const book = bookId ? library.getBook(bookId) : null;
+  if (bookId && !book) {
+    return res.status(400).json({ error: 'That ebook is no longer loaded — reload the page and pick again.' });
+  }
+
+  const label = (topic && topic.trim()) || (book && book.title) || '';
+  const { contextText, refBlock } = buildStudyContext(bookId, topic, useReference);
+  if (!contextText) {
+    return res.status(400).json({ error: `Nothing in your Library matches "${label}" — try a different topic or pick an ebook.` });
+  }
 
   const systemPrompt = `You create a multiple-choice quiz for a PTE Academic student, grounded ONLY in the material below — never invent facts, numbers, or templates that aren't in it. Respond with ONLY a raw JSON array, no markdown code fences, no commentary before or after, in exactly this shape:
 [{"question": "...", "options": ["...","...","...","..."], "answerIndex": 0, "explanation": "under 25 words"}]
 Create exactly ${n} questions focused on: ${label}. Each question needs exactly 4 options with only one correct answer. "answerIndex" is the 0-based index of the correct option.
 
-MATERIAL:
+LIBRARY MATERIAL (excerpts from the student's own ebooks — each labelled with its book title and page):
 ${contextText}${refBlock ? `\n\nADDITIONAL PERSONAL REFERENCE EXCERPTS (paraphrase these in your own words rather than quoting them):\n${refBlock}` : ''}`;
 
   try {

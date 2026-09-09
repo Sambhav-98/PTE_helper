@@ -135,6 +135,49 @@ function search(query, topK = 5) {
   return reference.searchChunks(query, allChunks(), topK);
 }
 
+/** Looks up a single loaded book by its id (the Drive file ID). */
+function getBook(bookId) {
+  return books.find(b => b.id === bookId) || null;
+}
+
+/**
+ * Same keyword search as above, but scoped to one book. Used by the
+ * Practice tab when the student picks a specific ebook and also types a
+ * topic — they get questions from that book about that topic, rather than
+ * from wherever in the library the topic happens to appear.
+ */
+function searchInBook(bookId, query, topK = 5) {
+  const book = getBook(bookId);
+  if (!book) return [];
+  return reference.searchChunks(query, book.chunks, topK);
+}
+
+/**
+ * Picks `count` chunks spread across a book (or the whole library, if no
+ * bookId is given) rather than matched to a query. This is what backs
+ * "generate from this ebook" with no topic typed: there's nothing to
+ * search for, so instead we take an evenly-spaced sample so the material
+ * comes from across the whole book instead of only its opening pages.
+ *
+ * The starting offset is randomised, so pressing Generate again on the
+ * same book pulls a different slice and produces a fresh set of cards or
+ * questions instead of repeating the last one.
+ */
+function sampleChunks(bookId, count = 4) {
+  const pool = bookId ? (getBook(bookId)?.chunks || []) : allChunks();
+  if (!pool.length) return [];
+  if (pool.length <= count) return [...pool];
+
+  const stride = pool.length / count;
+  const jitter = Math.random() * stride;
+  const picked = [];
+  for (let i = 0; i < count; i++) {
+    const idx = Math.min(pool.length - 1, Math.floor(i * stride + jitter));
+    picked.push(pool[idx]);
+  }
+  return picked;
+}
+
 /** Same capped-excerpt idea as reference.js, labeled per-book instead of generic "Reference". */
 function buildExcerptBlock(matches, maxChars = 3500) {
   let used = 0;
@@ -155,6 +198,9 @@ module.exports = {
   listBooks,
   isEmpty,
   search,
+  getBook,
+  searchInBook,
+  sampleChunks,
   buildExcerptBlock,
   configuredCount,
   isLoading: () => isLoading,
